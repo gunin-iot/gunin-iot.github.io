@@ -3,214 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IIoT: Інтелектуальна система обміну даними (ШІ-аномалії)</title>
+    <title>Smart Campus: Гібридна IIoT Архітектура</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
-            --bg-dark: #16161a;
-            --panel-bg: #24262d;
+            --bg-dark: #0f1115;
+            --panel-bg: #1a1c23;
             --text-main: #e4e4e6;
             --text-muted: #94a1b2;
             --accent-blue: #3b82f6;
             --accent-red: #ef4444;
             --accent-green: #10b981;
-            --accent-yellow: #f59e0b;
-            --accent-ai: #a855f7; /* Фіолетовий для ШІ */
-            --border-color: #3f414d;
+            --accent-orange: #f59e0b;
+            --accent-ai: #a855f7;
+            --border-color: #2b2b36;
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-dark);
             color: var(--text-main);
-            margin: 0;
-            padding: 20px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
+            margin: 0; padding: 15px;
+            display: flex; justify-content: center; align-items: center; min-height: 100vh;
         }
 
         .dashboard {
             background-color: var(--panel-bg);
-            border-radius: 12px;
-            width: 100%;
-            max-width: 1000px;
-            padding: 24px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 12px; width: 100%; max-width: 1100px; padding: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.7);
+            border: 1px solid var(--border-color);
         }
 
-        .header-stats {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 20px;
-            font-size: 0.9em;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-muted);
-        }
-
-        .stat-value {
-            font-size: 1.2em;
-            font-weight: bold;
-            color: var(--text-main);
-            display: block;
-            margin-top: 4px;
-        }
+        .header { text-align: center; margin-bottom: 15px; font-weight: bold; font-size: 1.2em; color: var(--accent-blue); text-transform: uppercase; letter-spacing: 2px;}
 
         .canvas-container {
-            position: relative;
-            width: 100%;
-            height: 260px;
-            background-color: #1a1c23;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            margin-bottom: 20px;
-            overflow: hidden;
+            width: 100%; height: 320px; background-color: #12141a; border-radius: 8px;
+            border: 1px solid var(--border-color); margin-bottom: 15px; position: relative;
         }
 
-        #simCanvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-        }
+        #simCanvas { width: 100%; height: 100%; display: block; }
 
-        .charts-wrapper {
-            display: flex;
-            gap: 20px;
-            margin-bottom: 20px;
-        }
-
+        .charts-wrapper { display: flex; gap: 15px; margin-bottom: 15px; }
         .chart-container {
-            flex: 1;
-            height: 180px;
-            background-color: #1a1c23;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            padding: 10px;
+            flex: 1; height: 160px; background-color: #12141a; border-radius: 8px;
+            border: 1px solid var(--border-color); padding: 10px; position: relative;
         }
+        .chart-title { text-align: center; font-size: 0.75em; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px;}
 
         .controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 15px;
-            background-color: #1a1c23;
-            padding: 16px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
+            display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px;
+            background-color: #12141a; padding: 15px; border-radius: 8px; border: 1px solid var(--border-color);
         }
 
-        .control-group {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background-color: rgba(255, 255, 255, 0.02);
-            padding: 8px 12px;
-            border-radius: 6px;
+        .control-panel {
+            background: rgba(255,255,255,0.02); padding: 10px; border-radius: 6px;
+            display: flex; flex-direction: column; gap: 10px; border: 1px solid rgba(255,255,255,0.05);
         }
 
-        .ai-panel {
-            grid-column: span 2;
-            display: flex;
-            gap: 15px;
-            border: 1px solid var(--accent-ai);
-            background-color: rgba(168, 85, 247, 0.05);
-            padding: 12px;
-            border-radius: 8px;
-            align-items: center;
-        }
-
-        input[type=range] {
-            flex-grow: 1;
-            margin: 0 15px;
-            accent-color: var(--accent-blue);
-        }
-        
-        input[type=range].ai-slider {
-            accent-color: var(--accent-ai);
-        }
+        .panel-title { font-size: 0.8em; color: var(--accent-blue); text-transform: uppercase; font-weight: bold; border-bottom: 1px solid var(--border-color); padding-bottom: 5px; margin-bottom: 5px;}
+        .panel-title.ai { color: var(--accent-ai); }
+        .panel-title.net { color: var(--accent-green); }
 
         button {
-            background-color: var(--border-color);
-            color: var(--text-main);
-            border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            transition: all 0.2s;
-            width: 100%;
+            background-color: var(--border-color); color: var(--text-main); border: none;
+            padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9em; transition: 0.2s;
         }
-
         button:hover { background-color: #4f5160; }
+        button.active-red { background-color: var(--accent-red); color: white; }
+        button.active-ai { background-color: var(--accent-ai); color: white; }
+
+        .status-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; }
+        .bg-green { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
+        .bg-red { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
+        .bg-orange { background: rgba(245, 158, 11, 0.2); color: var(--accent-orange); }
+
+        .flex-between { display: flex; justify-content: space-between; align-items: center; font-size: 0.85em;}
         
-        button.active-ai {
-            background-color: var(--accent-ai);
-            color: white;
-            box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
-        }
-
-        .toggle-switch {
-            position: relative;
-            display: inline-block;
-            width: 50px;
-            height: 24px;
-        }
-
-        .toggle-switch input { opacity: 0; width: 0; height: 0; }
-
-        .slider {
-            position: absolute;
-            cursor: pointer;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-color: #ccc;
-            transition: .4s;
-            border-radius: 24px;
-        }
-
-        .slider:before {
-            position: absolute;
-            content: "";
-            height: 16px;
-            width: 16px;
-            left: 4px;
-            bottom: 4px;
-            background-color: white;
-            transition: .4s;
-            border-radius: 50%;
-        }
-
-        input:checked + .slider { background-color: var(--accent-blue); }
-        input:checked + .slider:before { transform: translateX(26px); }
-
-        .chart-title {
-            text-align: center;
-            font-size: 0.8em;
-            color: var(--text-muted);
-            margin-bottom: 5px;
-            text-transform: uppercase;
-        }
-        
-        .ai-label {
-            color: var(--accent-ai);
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
+        .legend { display: flex; gap: 10px; justify-content: center; font-size: 0.75em; color: var(--text-muted); margin-top: 10px;}
+        .leg-item { display: flex; align-items: center; gap: 4px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
 
     </style>
 </head>
 <body>
 
 <div class="dashboard">
-    <div class="header-stats">
-        <div>Інтелектуальний обмін даними</div>
-        <div>Відфільтровано<span class="stat-value" id="val-blocked">0</span></div>
-        <div>Генератор<span class="stat-value" id="val-mode" style="color: var(--accent-green)">Вимкнено</span></div>
-        <div>Канал A<span class="stat-value" id="val-bw-a" style="color: var(--accent-red)">0%</span></div>
-        <div>Канал B (Edge)<span class="stat-value" id="val-bw-b" style="color: var(--accent-green)">0%</span></div>
-    </div>
+    <div class="header">Smart Campus: Багаторівнева Архітектура з ШІ та NTN резервуванням</div>
 
     <div class="canvas-container">
         <canvas id="simCanvas"></canvas>
@@ -218,49 +96,70 @@
 
     <div class="charts-wrapper">
         <div class="chart-container">
-            <div class="chart-title">Фізичний рівень (АЦП Сенсора)</div>
+            <div class="chart-title">Фізичний рівень (Вихід АЦП)</div>
             <canvas id="sensorChart"></canvas>
         </div>
         <div class="chart-container">
-            <div class="chart-title">Мережеве навантаження (Пакети/с)</div>
+            <div class="chart-title">Локальний Буфер (Fog QoS)</div>
+            <canvas id="bufferChart"></canvas>
+        </div>
+        <div class="chart-container">
+            <div class="chart-title">Пропускна здатність до Хмари</div>
             <canvas id="networkChart"></canvas>
         </div>
     </div>
 
     <div class="controls">
-        <div class="control-group">
-            <label>Поріг Edge-фільтра</label>
-            <input type="range" id="filterSlider" min="0" max="1" step="0.1" value="0.8">
-            <span id="filterVal">0.8</span>
-        </div>
-        
-        <div class="control-group">
-            <label>Живлення системи</label>
-            <label class="toggle-switch">
-                <input type="checkbox" id="activeToggle" checked>
-                <span class="slider"></span>
-            </label>
+        <!-- Panel 1: Edge / AI -->
+        <div class="control-panel">
+            <div class="panel-title ai">Edge TinyML & Federated Learning</div>
+            <button id="anomalyBtn">Згенерувати критичний збій</button>
+            <div class="flex-between">
+                <span>TinyML Фільтр:</span>
+                <span class="status-badge bg-green" id="ml-status">АКТИВНИЙ</span>
+            </div>
+            <div class="flex-between">
+                <span>FL Оновлення:</span>
+                <span style="color: var(--accent-ai); font-size: 0.8em;">Кожні 3 сек</span>
+            </div>
         </div>
 
-        <!-- Панель керування ШІ -->
-        <div class="ai-panel">
-            <div style="flex: 1;">
-                <button id="anomalyBtn">🤖 Активувати ШІ-генератор аномалій</button>
+        <!-- Panel 2: Network Routing -->
+        <div class="control-panel">
+            <div class="panel-title net">Гібридна Маршрутизація (Fog)</div>
+            <button id="linkBtn">Вимкнути наземний канал (5G)</button>
+            <div class="flex-between">
+                <span>Terrestrial (Основний):</span>
+                <span class="status-badge bg-green" id="terr-status">UP (100%)</span>
             </div>
-            <div style="flex: 2; display: flex; align-items: center;">
-                <span class="ai-label">Сила атак/збоїв:</span>
-                <input type="range" id="aiStrengthSlider" class="ai-slider" min="1" max="5" step="0.5" value="2.5" disabled>
-                <span id="aiStrengthVal" style="color: var(--text-main); font-weight: bold; width: 30px; text-align: right;">2.5</span>
+            <div class="flex-between">
+                <span>NTN/Satellite (Резерв):</span>
+                <span class="status-badge bg-orange" id="ntn-status">STANDBY</span>
             </div>
         </div>
+
+        <!-- Panel 3: Stats -->
+        <div class="control-panel">
+            <div class="panel-title">Метрики QoS</div>
+            <div class="flex-between"><span>Відкинуто Edge (Шум):</span> <strong id="stat-dropped">0</strong></div>
+            <div class="flex-between"><span>Аномалій виявлено:</span> <strong id="stat-anomalies" style="color: var(--accent-orange)">0</strong></div>
+            <div class="flex-between"><span>QoS Затримка (Буфер):</span> <strong id="stat-buffer">0 пак.</strong></div>
+            <div class="flex-between"><span>Відправлено FL ваг:</span> <strong id="stat-fl" style="color: var(--accent-ai)">0</strong></div>
+        </div>
+    </div>
+    
+    <div class="legend">
+        <div class="leg-item"><div class="dot" style="background:#fff"></div> Телеметрія</div>
+        <div class="leg-item"><div class="dot" style="background:var(--accent-orange)"></div> TinyML Аномалія (Пріоритет)</div>
+        <div class="leg-item"><div class="dot" style="background:var(--accent-ai)"></div> FL Ваги моделі</div>
+        <div class="leg-item"><div class="dot" style="background:var(--accent-red)"></div> Відхилений Шум</div>
     </div>
 </div>
 
 <script>
-    // --- Налаштування Canvas ---
+    // --- Canvas Setup ---
     const canvas = document.getElementById('simCanvas');
     const ctx = canvas.getContext('2d');
-    
     let width, height;
     function resizeCanvas() {
         width = canvas.width = canvas.parentElement.clientWidth;
@@ -269,315 +168,340 @@
     window.addEventListener('resize', resizeCanvas);
     resizeCanvas();
 
-    let isActive = true;
-    let isAnomalyAI = false;
-    let filterSensitivity = 0.8;
-    let aiStrength = 2.5; // Сила аномалії
-    let blockedPackets = 0;
+    // --- System State ---
+    let isAnomaly = false;
+    let terrestrialUp = true;
+    let timeT = 0;
     
-    let packetsA = 0;
-    let packetsB = 0;
+    // Stats
+    let statDropped = 0;
+    let statAnomalies = 0;
+    let statFL = 0;
+    let networkThroughput = 0;
 
-    const blockedEl = document.getElementById('val-blocked');
-    const modeEl = document.getElementById('val-mode');
-    const bwAEl = document.getElementById('val-bw-a');
-    const bwBEl = document.getElementById('val-bw-b');
-
+    // Nodes definition
     const nodes = {
-        sensor: { x: 0.1, y: 0.5, label: 'СЕНСОР\nДжерело даних', type: 'box' },
-        gwA: { x: 0.5, y: 0.2, label: 'ТРАДИЦІЙНА АРХІТЕКТУРА', type: 'text' },
-        gwB: { x: 0.5, y: 0.8, label: 'EDGE-МІКРОКОНТРОЛЕР\n(Фільтрація)', type: 'box' },
-        cloud: { x: 0.9, y: 0.5, label: 'ХМАРНИЙ СЕРВЕР', type: 'box' }
+        sensor: { x: 0.1, y: 0.7, label: 'СЕНСОР\n(IIoT)', type: 'box' },
+        edge: { x: 0.35, y: 0.7, label: 'EDGE (ESP32)\nTinyML + FL', type: 'box' },
+        fog: { x: 0.6, y: 0.7, label: 'FOG СЕРВЕР\n(Локальний буфер)', type: 'box' },
+        cloud: { x: 0.9, y: 0.5, label: 'ХМАРА\n(Глобальна аналітика)', type: 'box' }
     };
 
+    // Store & Forward Buffer at Fog
+    const fogBuffer = {
+        anomalies: [],
+        fl_weights: [],
+        telemetry: []
+    };
+
+    // --- Packets System ---
+    let packets = [];
+
     class Packet {
-        constructor(path, isSpike) {
-            this.path = path; 
-            this.x = nodes.sensor.x * width;
-            this.y = nodes.sensor.y * height;
+        constructor(type, stage, startNode, endNode) {
+            this.type = type; // 'telemetry', 'anomaly', 'noise', 'fl'
+            this.stage = stage; // 1 (Sensor->Edge), 2 (Edge->Fog), 3 (Fog->Cloud)
+            this.x = startNode.x * width;
+            this.y = startNode.y * height;
+            this.startX = this.x; this.startY = this.y;
+            this.targetX = endNode.x * width; this.targetY = endNode.y * height;
             this.progress = 0;
-            this.speed = 0.015 + Math.random() * 0.005;
-            this.isSpike = isSpike; 
-            this.state = 'moving'; 
-            this.targetY = path === 'A' ? nodes.gwA.y * height : nodes.gwB.y * height;
-            
-            // Якщо це пакет від сильного збою, він летить трохи хаотичніше
-            this.wobble = isSpike ? (Math.random() - 0.5) * 20 : 0;
+            this.speed = stage === 3 && !terrestrialUp ? 0.005 : 0.015; // Супутник повільніший
+            this.state = 'moving';
+            this.routeType = stage === 3 && !terrestrialUp ? 'ntn' : 'direct';
         }
 
         update() {
             if (this.state === 'dropping') {
-                this.y += 5;
-                this.x += 1;
-                if (this.y > height + 20) return true; 
-                return false;
+                this.y += 3; this.x += 0.5;
+                return this.y > height + 10;
             }
 
             this.progress += this.speed;
-            this.x = (nodes.sensor.x + (nodes.cloud.x - nodes.sensor.x) * this.progress) * width;
+            if (this.progress > 1) this.progress = 1;
+
+            this.x = this.startX + (this.targetX - this.startX) * this.progress;
             
-            let baseY = 0;
-            if (this.progress < 0.5) {
-                baseY = (nodes.sensor.y + (nodes.targetY / height - nodes.sensor.y) * (this.progress * 2)) * height;
+            // Якщо йде через супутник (NTN), малюємо високу параболу
+            if (this.routeType === 'ntn') {
+                const arcHeight = height * 0.4;
+                const par = 4 * arcHeight * this.progress * (1 - this.progress);
+                this.y = this.startY + (this.targetY - this.startY) * this.progress - par;
             } else {
-                baseY = (this.targetY / height + (nodes.cloud.y - this.targetY / height) * ((this.progress - 0.5) * 2)) * height;
+                this.y = this.startY + (this.targetY - this.startY) * this.progress;
             }
-            
-            this.y = baseY + (Math.sin(this.progress * Math.PI * 4) * this.wobble);
 
-            // Edge-фільтрація
-            if (this.path === 'B' && this.progress >= 0.5 && this.progress < 0.5 + this.speed) {
-                // ШІ збої можуть бути складнішими для відсікання
-                let dynamicFilter = filterSensitivity * (1 - (aiStrength * 0.05)); 
-                
-                if (this.isSpike && Math.random() < dynamicFilter) {
-                    this.state = 'dropping';
-                    blockedPackets++;
-                    blockedEl.innerText = blockedPackets;
-                } else if (!isAnomalyAI && !this.isSpike && Math.random() < 0.7) {
-                    this.state = 'dropping'; 
+            // Логіка прибуття
+            if (this.progress >= 1) {
+                if (this.stage === 1) this.handleEdgeLogic();
+                else if (this.stage === 2) this.handleFogLogic();
+                else if (this.stage === 3) {
+                    networkThroughput++;
+                    return true; // Доставлено в хмару
                 }
-            }
-
-            if (this.progress >= 1 && this.state !== 'dropping') {
-                if (this.path === 'A') packetsA++;
-                if (this.path === 'B') packetsB++;
-                return true; 
+                return true; // Видаляємо пакет з поточного етапу після обробки
             }
             return false;
         }
 
+        handleEdgeLogic() {
+            // Edge TinyML Logic
+            if (this.type === 'noise') {
+                // Відкидаємо шум
+                let drop = new Packet('noise', 0, nodes.edge, nodes.edge);
+                drop.state = 'dropping';
+                packets.push(drop);
+                statDropped++;
+                document.getElementById('stat-dropped').innerText = statDropped;
+            } else {
+                // Відправляємо на Fog
+                packets.push(new Packet(this.type, 2, nodes.edge, nodes.fog));
+                if (this.type === 'anomaly') {
+                    statAnomalies++;
+                    document.getElementById('stat-anomalies').innerText = statAnomalies;
+                }
+            }
+        }
+
+        handleFogLogic() {
+            // Store & Forward Logic (QoS)
+            if (this.type === 'anomaly') fogBuffer.anomalies.push(this);
+            else if (this.type === 'fl') fogBuffer.fl_weights.push(this);
+            else fogBuffer.telemetry.push(this);
+        }
+
         draw(ctx) {
             ctx.beginPath();
-            ctx.arc(this.x, this.y, this.isSpike ? 5 : 4, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y, this.type === 'fl' ? 5 : 4, 0, Math.PI * 2);
             
-            if (this.state === 'dropping') {
-                ctx.fillStyle = '#ef4444';
-            } else if (this.isSpike) {
-                ctx.fillStyle = '#a855f7'; // ШІ-пакети фіолетові
-            } else {
-                ctx.fillStyle = '#ffffff';
-            }
+            if (this.state === 'dropping') ctx.fillStyle = '#ef4444';
+            else if (this.type === 'anomaly') ctx.fillStyle = '#f59e0b'; // Orange
+            else if (this.type === 'fl') ctx.fillStyle = '#a855f7'; // Purple
+            else ctx.fillStyle = '#ffffff'; // Normal telemetry
             
             ctx.fill();
-            if (this.isSpike && this.state !== 'dropping') {
-                ctx.strokeStyle = '#d8b4fe';
-                ctx.lineWidth = 1.5;
-                ctx.stroke();
+            if (this.type === 'anomaly' && this.state !== 'dropping') {
+                ctx.strokeStyle = '#fcd34d'; ctx.lineWidth = 1; ctx.stroke();
             }
         }
     }
 
-    let packets = [];
-
-    function drawNode(node, isEdge = false) {
-        ctx.fillStyle = isEdge ? '#2b303b' : 'rgba(255,255,255,0.05)';
-        ctx.strokeStyle = isEdge ? '#10b981' : '#3f414d';
+    // --- Node Rendering ---
+    function drawNode(node, isActive = false) {
+        ctx.fillStyle = '#1e2029';
+        ctx.strokeStyle = isActive ? '#3b82f6' : '#2b2b36';
         ctx.lineWidth = 2;
         
-        const nw = 150;
-        const nh = 50;
-        const nx = node.x * width - nw/2;
-        const ny = node.y * height - nh/2;
+        const nw = 130; const nh = 45;
+        const nx = node.x * width - nw/2; const ny = node.y * height - nh/2;
         
-        if (node.type === 'box') {
-            if(isEdge) ctx.setLineDash([5, 5]);
-            ctx.beginPath();
-            ctx.roundRect(nx, ny, nw, nh, 6);
-            ctx.fill();
-            ctx.stroke();
-            ctx.setLineDash([]);
-        }
+        ctx.beginPath(); ctx.roundRect(nx, ny, nw, nh, 6);
+        ctx.fill(); ctx.stroke();
 
-        ctx.fillStyle = '#94a1b2';
-        ctx.font = '11px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
+        ctx.fillStyle = '#94a1b2'; ctx.font = '10px sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         
         const lines = node.label.split('\n');
         lines.forEach((line, i) => {
-            ctx.fillText(line, node.x * width, node.y * height + (i * 14) - ((lines.length-1)*7));
+            ctx.fillText(line, node.x * width, node.y * height + (i * 12) - ((lines.length-1)*6));
         });
     }
 
-    // --- Графіки ---
-    Chart.defaults.color = '#94a1b2';
-    Chart.defaults.font.size = 10;
+    function drawLinks() {
+        ctx.lineWidth = 1.5;
+        
+        // Sensor -> Edge -> Fog
+        ctx.strokeStyle = '#2b2b36';
+        ctx.beginPath();
+        ctx.moveTo(nodes.sensor.x * width, nodes.sensor.y * height);
+        ctx.lineTo(nodes.edge.x * width, nodes.edge.y * height);
+        ctx.lineTo(nodes.fog.x * width, nodes.fog.y * height);
+        ctx.stroke();
 
-    const sensorCtx = document.getElementById('sensorChart').getContext('2d');
-    const sensorChart = new Chart(sensorCtx, {
+        // Fog -> Cloud (Terrestrial 5G)
+        ctx.strokeStyle = terrestrialUp ? '#10b981' : '#ef4444';
+        ctx.setLineDash(terrestrialUp ? [] : [5, 5]);
+        ctx.beginPath();
+        ctx.moveTo(nodes.fog.x * width, nodes.fog.y * height);
+        ctx.lineTo(nodes.cloud.x * width, nodes.cloud.y * height);
+        ctx.stroke();
+        
+        // Label Terrestrial
+        ctx.fillStyle = terrestrialUp ? '#10b981' : '#ef4444';
+        ctx.fillText("5G Terrestrial", (nodes.fog.x + nodes.cloud.x)/2 * width, (nodes.fog.y + nodes.cloud.y)/2 * height - 10);
+
+        // Fog -> Cloud (NTN Satellite)
+        ctx.strokeStyle = !terrestrialUp ? '#f59e0b' : '#2b2b36';
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(nodes.fog.x * width, nodes.fog.y * height);
+        ctx.quadraticCurveTo((nodes.fog.x + nodes.cloud.x)/2 * width, height * 0.1, nodes.cloud.x * width, nodes.cloud.y * height);
+        ctx.stroke();
+        
+        // Satellite Icon/Label
+        ctx.fillStyle = !terrestrialUp ? '#f59e0b' : '#4f5160';
+        ctx.fillText("LEO Satellite (NTN)", (nodes.fog.x + nodes.cloud.x)/2 * width, height * 0.25);
+        ctx.setLineDash([]);
+    }
+
+    // --- Charts Setup ---
+    Chart.defaults.color = '#94a1b2'; Chart.defaults.font.size = 9;
+    const chartOpts = { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { color: '#2b2b36' } } } };
+
+    const sensorChart = new Chart(document.getElementById('sensorChart'), {
         type: 'line',
-        data: {
-            labels: Array(60).fill(''),
-            datasets: [{
-                label: 'Сигнал (мВ)',
-                borderColor: '#3b82f6',
-                backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                borderWidth: 2,
-                data: Array(60).fill(0),
-                pointRadius: 0,
-                fill: true,
-                tension: 0.1
-            }]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false, animation: false,
-            scales: { y: { min: -150, max: 150, grid: { color: '#2b2b36' } }, x: { display: false } },
-            plugins: { legend: { display: false } }
-        }
+        data: { labels: Array(50).fill(''), datasets: [{ borderColor: '#3b82f6', borderWidth: 1.5, data: Array(50).fill(0), pointRadius: 0, tension: 0.1 }] },
+        options: { ...chartOpts, scales: { ...chartOpts.scales, y: { min: -100, max: 100, grid: { color: '#2b2b36' } } } }
     });
 
-    const networkCtx = document.getElementById('networkChart').getContext('2d');
-    const networkChart = new Chart(networkCtx, {
-        type: 'line',
-        data: {
-            labels: Array(40).fill(''),
-            datasets: [
-                { label: 'Підхід А', borderColor: '#ef4444', borderWidth: 2, data: Array(40).fill(0), pointRadius: 0, tension: 0.3 },
-                { label: 'Підхід Б', borderColor: '#10b981', borderWidth: 2, data: Array(40).fill(0), pointRadius: 0, tension: 0.3 }
-            ]
-        },
-        options: {
-            responsive: true, maintainAspectRatio: false, animation: false,
-            scales: { y: { min: 0, max: 150, grid: { color: '#2b2b36' } }, x: { display: false } },
-            plugins: { legend: { display: false } }
-        }
+    const bufferChart = new Chart(document.getElementById('bufferChart'), {
+        type: 'bar',
+        data: { labels: Array(30).fill(''), datasets: [
+            { label: 'QoS 0 (Телеметрія)', backgroundColor: '#3f414d', data: Array(30).fill(0) },
+            { label: 'QoS 1 (Аномалії)', backgroundColor: '#f59e0b', data: Array(30).fill(0) }
+        ]},
+        options: { ...chartOpts, scales: { x: { stacked: true, display: false }, y: { stacked: true, min: 0, max: 50, grid: { color: '#2b2b36' } } } }
     });
 
-    let timeT = 0;
+    const netChart = new Chart(document.getElementById('networkChart'), {
+        type: 'line',
+        data: { labels: Array(40).fill(''), datasets: [{ borderColor: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', fill:true, borderWidth: 2, data: Array(40).fill(0), pointRadius: 0, tension: 0.2 }] },
+        options: { ...chartOpts, scales: { ...chartOpts.scales, y: { min: 0, max: 30, grid: { color: '#2b2b36' } } } }
+    });
 
+
+    // --- Main Loop ---
+    let frame = 0;
     function animate() {
-        if (isActive) {
-            ctx.clearRect(0, 0, width, height);
+        ctx.clearRect(0, 0, width, height);
+        drawLinks();
+        
+        drawNode(nodes.sensor);
+        drawNode(nodes.edge, frame % 120 < 10); // Блимає при обчисленнях
+        drawNode(nodes.fog, fogBuffer.anomalies.length > 0 || fogBuffer.telemetry.length > 0);
+        drawNode(nodes.cloud);
 
-            ctx.strokeStyle = '#3f414d';
-            ctx.lineWidth = 1;
-            ctx.beginPath();
-            ctx.moveTo(nodes.sensor.x * width, nodes.sensor.y * height);
-            ctx.lineTo(nodes.gwA.x * width, nodes.gwA.y * height);
-            ctx.lineTo(nodes.cloud.x * width, nodes.cloud.y * height);
-            ctx.stroke();
+        // Process Packets
+        packets = packets.filter(p => { p.draw(ctx); return !p.update(); });
+        
+        // Fog Queue Processing (QoS Routing)
+        // Наземний канал передає швидко, Супутник - дуже повільно
+        let txCapacity = terrestrialUp ? 3 : (frame % 3 === 0 ? 1 : 0); 
+        
+        for (let i = 0; i < txCapacity; i++) {
+            let nextPacket = null;
+            // Строгий QoS: спочатку FL, потім Аномалії, потім Телеметрія
+            if (fogBuffer.fl_weights.length > 0) nextPacket = fogBuffer.fl_weights.shift();
+            else if (fogBuffer.anomalies.length > 0) nextPacket = fogBuffer.anomalies.shift();
+            else if (fogBuffer.telemetry.length > 0) {
+                // Якщо працює тільки супутник, ми дропаємо звичайну телеметрію щоб не забити канал
+                if (!terrestrialUp && fogBuffer.telemetry.length > 10) {
+                    fogBuffer.telemetry.shift(); // Drop packet
+                    continue; 
+                }
+                nextPacket = fogBuffer.telemetry.shift();
+            }
 
-            ctx.beginPath();
-            ctx.moveTo(nodes.sensor.x * width, nodes.sensor.y * height);
-            ctx.lineTo(nodes.gwB.x * width, nodes.gwB.y * height);
-            ctx.lineTo(nodes.cloud.x * width, nodes.cloud.y * height);
-            ctx.stroke();
-
-            drawNode(nodes.sensor);
-            drawNode(nodes.cloud);
-            drawNode(nodes.gwB, true);
-            
-            ctx.fillStyle = '#94a1b2';
-            ctx.fillText(nodes.gwA.label, nodes.gwA.x * width, nodes.gwA.y * height - 20);
-
-            packets = packets.filter(p => { p.draw(ctx); return !p.update(); });
+            if (nextPacket) {
+                packets.push(new Packet(nextPacket.type, 3, nodes.fog, nodes.cloud));
+            }
         }
+
+        // Візуалізація переповнення буфера
+        document.getElementById('stat-buffer').innerText = `${fogBuffer.telemetry.length + fogBuffer.anomalies.length} пак.`;
+        if(fogBuffer.telemetry.length + fogBuffer.anomalies.length > 30) {
+            ctx.fillStyle = '#ef4444'; ctx.font = '12px sans-serif';
+            ctx.fillText("BUFFER WARNING", nodes.fog.x * width, nodes.fog.y * height - 35);
+        }
+
+        frame++;
         requestAnimationFrame(animate);
     }
 
-    // Генерація фізичних даних
+    // --- Data Generators ---
     setInterval(() => {
-        if (!isActive) return;
         timeT += 0.2;
-        
-        let baseSignal = Math.sin(timeT) * 40; 
-        let noise = (Math.random() - 0.5) * 10; 
+        let signal = Math.sin(timeT) * 30; 
         let isSpike = false;
+        let isNoise = Math.random() < 0.4;
 
-        if (isAnomalyAI) {
-            // Ймовірність та сила збою залежать від повзунка ШІ
-            let spikeProbability = 0.05 + (aiStrength * 0.05); 
-            
-            if (Math.random() < spikeProbability) { 
-                let spikeAmplitude = 50 + (aiStrength * 20); // Чим більша сила, тим більший виліт
-                noise += (Math.random() > 0.5 ? spikeAmplitude : -spikeAmplitude); 
-                isSpike = true;
-                
-                // Візуалізація дії ШІ на сенсорі
-                ctx.fillStyle = `rgba(168, 85, 247, ${0.1 + (aiStrength * 0.05)})`;
-                ctx.beginPath();
-                ctx.arc(nodes.sensor.x * width, nodes.sensor.y * height, 30 + (aiStrength * 8), 0, Math.PI*2);
-                ctx.fill();
-            } else {
-                noise += (Math.random() - 0.5) * 15 * aiStrength; // Загальний шум фону
-            }
+        if (isAnomaly && Math.random() < 0.15) { 
+            signal += (Math.random() > 0.5 ? 60 : -60); 
+            isSpike = true;
+            ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
+            ctx.beginPath(); ctx.arc(nodes.sensor.x * width, nodes.sensor.y * height, 30, 0, Math.PI*2); ctx.fill();
+        } else if (isNoise) {
+            signal += (Math.random() - 0.5) * 15;
         }
 
-        let finalValue = baseSignal + noise;
-        
-        sensorChart.data.datasets[0].data.push(finalValue);
+        sensorChart.data.datasets[0].data.push(signal);
         sensorChart.data.datasets[0].data.shift();
-        sensorChart.data.datasets[0].borderColor = isSpike ? '#a855f7' : '#3b82f6'; // Фіолетовий при збої
+        sensorChart.data.datasets[0].borderColor = isSpike ? '#f59e0b' : '#3b82f6';
         sensorChart.update();
 
-        // Генерація пакетів
+        // Фізичний рівень генерує пакети до Edge
         if (isSpike) {
-            let burstMultiplier = Math.ceil(aiStrength / 1.5); // Кількість пакетів залежить від сили
-            for(let i=0; i < burstMultiplier; i++) {
-                packets.push(new Packet('A', true));
-                packets.push(new Packet('B', true));
-            }
+            packets.push(new Packet('anomaly', 1, nodes.sensor, nodes.edge));
+            packets.push(new Packet('anomaly', 1, nodes.sensor, nodes.edge));
+        } else if (isNoise) {
+            packets.push(new Packet('noise', 1, nodes.sensor, nodes.edge));
         } else if (Math.random() < 0.3) {
-            packets.push(new Packet('A', false));
-            packets.push(new Packet('B', false));
+            packets.push(new Packet('telemetry', 1, nodes.sensor, nodes.edge));
         }
-
     }, 100);
 
-    // Оновлення мережевих метрик
+    // Federated Learning Tick (Кожні 3 секунди Edge відправляє оновлення ваг)
     setInterval(() => {
-        if (!isActive) return;
-        let loadA = Math.min(150, packetsA * 8); 
-        let loadB = Math.min(150, packetsB * 8);
-        
-        bwAEl.innerText = loadA > 100 ? '>100%' : loadA + '%';
-        bwBEl.innerText = loadB + '%';
+        packets.push(new Packet('fl', 1, nodes.edge, nodes.edge)); // Логічно створюємо на Edge
+        packets[packets.length-1].handleEdgeLogic(); // І відразу штовхаємо на Fog
+        statFL++;
+        document.getElementById('stat-fl').innerText = statFL;
+    }, 3000);
 
-        networkChart.data.datasets[0].data.push(loadA);
-        networkChart.data.datasets[0].data.shift();
-        networkChart.data.datasets[1].data.push(loadB);
-        networkChart.data.datasets[1].data.shift();
-        networkChart.update();
+    // Оновлення метрик графіка
+    setInterval(() => {
+        bufferChart.data.datasets[0].data.push(fogBuffer.telemetry.length);
+        bufferChart.data.datasets[0].data.shift();
+        bufferChart.data.datasets[1].data.push(fogBuffer.anomalies.length);
+        bufferChart.data.datasets[1].data.shift();
+        bufferChart.update();
 
-        packetsA = 0; packetsB = 0;
+        netChart.data.datasets[0].data.push(networkThroughput);
+        netChart.data.datasets[0].data.shift();
+        netChart.data.datasets[0].borderColor = terrestrialUp ? '#10b981' : '#f59e0b';
+        netChart.data.datasets[0].backgroundColor = terrestrialUp ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)';
+        netChart.update();
+        networkThroughput = 0;
     }, 500);
 
-    // Обробники керування
-    document.getElementById('filterSlider').addEventListener('input', (e) => {
-        filterSensitivity = parseFloat(e.target.value);
-        document.getElementById('filterVal').innerText = filterSensitivity.toFixed(1);
-    });
-
-    const aiStrengthSlider = document.getElementById('aiStrengthSlider');
-    const aiStrengthVal = document.getElementById('aiStrengthVal');
-
-    aiStrengthSlider.addEventListener('input', (e) => {
-        aiStrength = parseFloat(e.target.value);
-        aiStrengthVal.innerText = aiStrength.toFixed(1);
-    });
-
-    const anomalyBtn = document.getElementById('anomalyBtn');
-    anomalyBtn.addEventListener('click', () => {
-        isAnomalyAI = !isAnomalyAI;
-        aiStrengthSlider.disabled = !isAnomalyAI;
-        
-        if (isAnomalyAI) {
-            anomalyBtn.innerText = '🛑 Зупинити ШІ-генератор';
-            anomalyBtn.classList.add('active-ai');
-            modeEl.innerText = '🤖 АКТИВНО';
-            modeEl.style.color = 'var(--accent-ai)';
+    // --- Controls ---
+    document.getElementById('anomalyBtn').addEventListener('click', (e) => {
+        isAnomaly = !isAnomaly;
+        if (isAnomaly) {
+            e.target.innerText = '🛑 Зупинити збій сенсора';
+            e.target.classList.add('active-red');
         } else {
-            anomalyBtn.innerText = '🤖 Активувати ШІ-генератор аномалій';
-            anomalyBtn.classList.remove('active-ai');
-            modeEl.innerText = 'Вимкнено';
-            modeEl.style.color = 'var(--accent-green)';
-            sensorChart.data.datasets[0].borderColor = '#3b82f6';
+            e.target.innerText = 'Згенерувати критичний збій';
+            e.target.classList.remove('active-red');
         }
     });
 
-    document.getElementById('activeToggle').addEventListener('change', (e) => {
-        isActive = e.target.checked;
+    document.getElementById('linkBtn').addEventListener('click', (e) => {
+        terrestrialUp = !terrestrialUp;
+        const tStatus = document.getElementById('terr-status');
+        const nStatus = document.getElementById('ntn-status');
+        
+        if (!terrestrialUp) {
+            e.target.innerText = 'Відновити наземний канал (5G)';
+            e.target.classList.add('active-red');
+            tStatus.className = 'status-badge bg-red'; tStatus.innerText = 'DOWN (FAIL)';
+            nStatus.className = 'status-badge bg-green'; nStatus.innerText = 'ACTIVE (SAT)';
+        } else {
+            e.target.innerText = 'Вимкнути наземний канал (5G)';
+            e.target.classList.remove('active-red');
+            tStatus.className = 'status-badge bg-green'; tStatus.innerText = 'UP (100%)';
+            nStatus.className = 'status-badge bg-orange'; nStatus.innerText = 'STANDBY';
+        }
     });
 
     animate();
