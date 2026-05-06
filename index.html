@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Campus: Гібридна IIoT Архітектура</title>
+    <title>Smart Office: Гібридна IIoT Архітектура</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -75,11 +75,11 @@
         .status-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; }
         .bg-green { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
         .bg-red { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
-        .bg-orange { background: rgba(245, 158, 11, 0.2); color: var(--accent-orange); }
+        .bg-blue { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
 
         .flex-between { display: flex; justify-content: space-between; align-items: center; font-size: 0.85em;}
         
-        .legend { display: flex; gap: 10px; justify-content: center; font-size: 0.75em; color: var(--text-muted); margin-top: 10px;}
+        .legend { display: flex; gap: 15px; justify-content: center; font-size: 0.75em; color: var(--text-muted); margin-top: 10px;}
         .leg-item { display: flex; align-items: center; gap: 4px; }
         .dot { width: 8px; height: 8px; border-radius: 50%; }
 
@@ -88,7 +88,7 @@
 <body>
 
 <div class="dashboard">
-    <div class="header">Smart Campus: Багаторівнева Архітектура з ШІ та NTN резервуванням</div>
+    <div class="header">Розумний Офіс: Маршрутизація даних (Оптоволокно + 4G/5G)</div>
 
     <div class="canvas-container">
         <canvas id="simCanvas"></canvas>
@@ -96,15 +96,15 @@
 
     <div class="charts-wrapper">
         <div class="chart-container">
-            <div class="chart-title">Фізичний рівень (Вихід АЦП)</div>
+            <div class="chart-title">Дані офісного сенсора</div>
             <canvas id="sensorChart"></canvas>
         </div>
         <div class="chart-container">
-            <div class="chart-title">Локальний Буфер (Fog QoS)</div>
+            <div class="chart-title">Буфер Маршрутизатора (QoS)</div>
             <canvas id="bufferChart"></canvas>
         </div>
         <div class="chart-container">
-            <div class="chart-title">Пропускна здатність до Хмари</div>
+            <div class="chart-title">Навантаження на зовнішній канал</div>
             <canvas id="networkChart"></canvas>
         </div>
     </div>
@@ -112,46 +112,46 @@
     <div class="controls">
         <!-- Panel 1: Edge / AI -->
         <div class="control-panel">
-            <div class="panel-title ai">Edge TinyML & Federated Learning</div>
-            <button id="anomalyBtn">Згенерувати критичний збій</button>
+            <div class="panel-title ai">IoT Контролер (Локально)</div>
+            <button id="anomalyBtn">Симуляція інциденту (Тривога)</button>
             <div class="flex-between">
-                <span>TinyML Фільтр:</span>
+                <span>Фільтр шумів:</span>
                 <span class="status-badge bg-green" id="ml-status">АКТИВНИЙ</span>
             </div>
             <div class="flex-between">
-                <span>FL Оновлення:</span>
+                <span>Синхронізація БД:</span>
                 <span style="color: var(--accent-ai); font-size: 0.8em;">Кожні 3 сек</span>
             </div>
         </div>
 
         <!-- Panel 2: Network Routing -->
         <div class="control-panel">
-            <div class="panel-title net">Гібридна Маршрутизація (Fog)</div>
-            <button id="linkBtn">Вимкнути наземний канал (5G)</button>
+            <div class="panel-title net">Офісний Шлюз (SD-WAN)</div>
+            <button id="linkBtn">Вимкнути провайдера (Обрив)</button>
             <div class="flex-between">
-                <span>Terrestrial (Основний):</span>
-                <span class="status-badge bg-green" id="terr-status">UP (100%)</span>
+                <span>Оптоволокно (WAN 1):</span>
+                <span class="status-badge bg-green" id="fiber-status">ОНЛАЙН (1 Гбіт/с)</span>
             </div>
             <div class="flex-between">
-                <span>NTN/Satellite (Резерв):</span>
-                <span class="status-badge bg-orange" id="ntn-status">STANDBY</span>
+                <span>Мобільна мережа (LTE):</span>
+                <span class="status-badge bg-blue" id="mobile-status">ОЧІКУВАННЯ</span>
             </div>
         </div>
 
         <!-- Panel 3: Stats -->
         <div class="control-panel">
-            <div class="panel-title">Метрики QoS</div>
-            <div class="flex-between"><span>Відкинуто Edge (Шум):</span> <strong id="stat-dropped">0</strong></div>
-            <div class="flex-between"><span>Аномалій виявлено:</span> <strong id="stat-anomalies" style="color: var(--accent-orange)">0</strong></div>
-            <div class="flex-between"><span>QoS Затримка (Буфер):</span> <strong id="stat-buffer">0 пак.</strong></div>
-            <div class="flex-between"><span>Відправлено FL ваг:</span> <strong id="stat-fl" style="color: var(--accent-ai)">0</strong></div>
+            <div class="panel-title">Метрики Трафіку</div>
+            <div class="flex-between"><span>Відкинуто (Шум):</span> <strong id="stat-dropped">0</strong></div>
+            <div class="flex-between"><span>Критичні події:</span> <strong id="stat-anomalies" style="color: var(--accent-orange)">0</strong></div>
+            <div class="flex-between"><span>Пакети в буфері:</span> <strong id="stat-buffer">0 шт.</strong></div>
+            <div class="flex-between"><span>Службові дані (AI):</span> <strong id="stat-fl" style="color: var(--accent-ai)">0</strong></div>
         </div>
     </div>
     
     <div class="legend">
-        <div class="leg-item"><div class="dot" style="background:#fff"></div> Телеметрія</div>
-        <div class="leg-item"><div class="dot" style="background:var(--accent-orange)"></div> TinyML Аномалія (Пріоритет)</div>
-        <div class="leg-item"><div class="dot" style="background:var(--accent-ai)"></div> FL Ваги моделі</div>
+        <div class="leg-item"><div class="dot" style="background:#fff"></div> Телеметрія (Клімат/Світло)</div>
+        <div class="leg-item"><div class="dot" style="background:var(--accent-orange)"></div> Тривога (Пріоритет 1)</div>
+        <div class="leg-item"><div class="dot" style="background:var(--accent-ai)"></div> Синхронізація (Пріоритет 2)</div>
         <div class="leg-item"><div class="dot" style="background:var(--accent-red)"></div> Відхилений Шум</div>
     </div>
 </div>
@@ -170,7 +170,7 @@
 
     // --- System State ---
     let isAnomaly = false;
-    let terrestrialUp = true;
+    let fiberUp = true;
     let timeT = 0;
     
     // Stats
@@ -181,16 +181,16 @@
 
     // Nodes definition
     const nodes = {
-        sensor: { x: 0.1, y: 0.7, label: 'СЕНСОР\n(IIoT)', type: 'box' },
-        edge: { x: 0.35, y: 0.7, label: 'EDGE (ESP32)\nTinyML + FL', type: 'box' },
-        fog: { x: 0.6, y: 0.7, label: 'FOG СЕРВЕР\n(Локальний буфер)', type: 'box' },
-        cloud: { x: 0.9, y: 0.5, label: 'ХМАРА\n(Глобальна аналітика)', type: 'box' }
+        sensor: { x: 0.1, y: 0.7, label: 'СЕНСОР\n(Кімната)', type: 'box' },
+        edge: { x: 0.35, y: 0.7, label: 'МІКРОКОНТРОЛЕР\n(Обробка)', type: 'box' },
+        router: { x: 0.6, y: 0.7, label: 'МАРШРУТИЗАТОР\n(SD-WAN)', type: 'box' },
+        cloud: { x: 0.9, y: 0.5, label: 'КОРПОРАТИВНА\nХМАРА', type: 'box' }
     };
 
-    // Store & Forward Buffer at Fog
-    const fogBuffer = {
-        anomalies: [],
-        fl_weights: [],
+    // Store & Forward Buffer
+    const routerBuffer = {
+        alerts: [],
+        sync: [],
         telemetry: []
     };
 
@@ -199,16 +199,17 @@
 
     class Packet {
         constructor(type, stage, startNode, endNode) {
-            this.type = type; // 'telemetry', 'anomaly', 'noise', 'fl'
-            this.stage = stage; // 1 (Sensor->Edge), 2 (Edge->Fog), 3 (Fog->Cloud)
+            this.type = type; 
+            this.stage = stage; 
             this.x = startNode.x * width;
             this.y = startNode.y * height;
             this.startX = this.x; this.startY = this.y;
             this.targetX = endNode.x * width; this.targetY = endNode.y * height;
             this.progress = 0;
-            this.speed = stage === 3 && !terrestrialUp ? 0.005 : 0.015; // Супутник повільніший
+            // Швидкість мобільної мережі трохи менша за провідну
+            this.speed = stage === 3 && !fiberUp ? 0.008 : 0.015; 
             this.state = 'moving';
-            this.routeType = stage === 3 && !terrestrialUp ? 'ntn' : 'direct';
+            this.routeType = stage === 3 && !fiberUp ? 'mobile' : 'fiber';
         }
 
         update() {
@@ -222,65 +223,60 @@
 
             this.x = this.startX + (this.targetX - this.startX) * this.progress;
             
-            // Якщо йде через супутник (NTN), малюємо високу параболу
-            if (this.routeType === 'ntn') {
-                const arcHeight = height * 0.4;
+            // Якщо йде через 4G/5G, малюємо лінію з невеликою дугою вгору (до вишки)
+            if (this.routeType === 'mobile') {
+                const arcHeight = height * 0.25;
                 const par = 4 * arcHeight * this.progress * (1 - this.progress);
                 this.y = this.startY + (this.targetY - this.startY) * this.progress - par;
             } else {
                 this.y = this.startY + (this.targetY - this.startY) * this.progress;
             }
 
-            // Логіка прибуття
             if (this.progress >= 1) {
                 if (this.stage === 1) this.handleEdgeLogic();
-                else if (this.stage === 2) this.handleFogLogic();
+                else if (this.stage === 2) this.handleRouterLogic();
                 else if (this.stage === 3) {
                     networkThroughput++;
-                    return true; // Доставлено в хмару
+                    return true; 
                 }
-                return true; // Видаляємо пакет з поточного етапу після обробки
+                return true; 
             }
             return false;
         }
 
         handleEdgeLogic() {
-            // Edge TinyML Logic
             if (this.type === 'noise') {
-                // Відкидаємо шум
                 let drop = new Packet('noise', 0, nodes.edge, nodes.edge);
                 drop.state = 'dropping';
                 packets.push(drop);
                 statDropped++;
                 document.getElementById('stat-dropped').innerText = statDropped;
             } else {
-                // Відправляємо на Fog
-                packets.push(new Packet(this.type, 2, nodes.edge, nodes.fog));
-                if (this.type === 'anomaly') {
+                packets.push(new Packet(this.type, 2, nodes.edge, nodes.router));
+                if (this.type === 'alert') {
                     statAnomalies++;
                     document.getElementById('stat-anomalies').innerText = statAnomalies;
                 }
             }
         }
 
-        handleFogLogic() {
-            // Store & Forward Logic (QoS)
-            if (this.type === 'anomaly') fogBuffer.anomalies.push(this);
-            else if (this.type === 'fl') fogBuffer.fl_weights.push(this);
-            else fogBuffer.telemetry.push(this);
+        handleRouterLogic() {
+            if (this.type === 'alert') routerBuffer.alerts.push(this);
+            else if (this.type === 'sync') routerBuffer.sync.push(this);
+            else routerBuffer.telemetry.push(this);
         }
 
         draw(ctx) {
             ctx.beginPath();
-            ctx.arc(this.x, this.y, this.type === 'fl' ? 5 : 4, 0, Math.PI * 2);
+            ctx.arc(this.x, this.y, this.type === 'sync' ? 5 : 4, 0, Math.PI * 2);
             
             if (this.state === 'dropping') ctx.fillStyle = '#ef4444';
-            else if (this.type === 'anomaly') ctx.fillStyle = '#f59e0b'; // Orange
-            else if (this.type === 'fl') ctx.fillStyle = '#a855f7'; // Purple
-            else ctx.fillStyle = '#ffffff'; // Normal telemetry
+            else if (this.type === 'alert') ctx.fillStyle = '#f59e0b'; 
+            else if (this.type === 'sync') ctx.fillStyle = '#a855f7'; 
+            else ctx.fillStyle = '#ffffff'; 
             
             ctx.fill();
-            if (this.type === 'anomaly' && this.state !== 'dropping') {
+            if (this.type === 'alert' && this.state !== 'dropping') {
                 ctx.strokeStyle = '#fcd34d'; ctx.lineWidth = 1; ctx.stroke();
             }
         }
@@ -310,41 +306,39 @@
     function drawLinks() {
         ctx.lineWidth = 1.5;
         
-        // Sensor -> Edge -> Fog
+        // LAN
         ctx.strokeStyle = '#2b2b36';
         ctx.beginPath();
         ctx.moveTo(nodes.sensor.x * width, nodes.sensor.y * height);
         ctx.lineTo(nodes.edge.x * width, nodes.edge.y * height);
-        ctx.lineTo(nodes.fog.x * width, nodes.fog.y * height);
+        ctx.lineTo(nodes.router.x * width, nodes.router.y * height);
         ctx.stroke();
 
-        // Fog -> Cloud (Terrestrial 5G)
-        ctx.strokeStyle = terrestrialUp ? '#10b981' : '#ef4444';
-        ctx.setLineDash(terrestrialUp ? [] : [5, 5]);
+        // Main Channel (Fiber)
+        ctx.strokeStyle = fiberUp ? '#10b981' : '#ef4444';
+        ctx.setLineDash(fiberUp ? [] : [5, 5]);
         ctx.beginPath();
-        ctx.moveTo(nodes.fog.x * width, nodes.fog.y * height);
+        ctx.moveTo(nodes.router.x * width, nodes.router.y * height);
         ctx.lineTo(nodes.cloud.x * width, nodes.cloud.y * height);
         ctx.stroke();
         
-        // Label Terrestrial
-        ctx.fillStyle = terrestrialUp ? '#10b981' : '#ef4444';
-        ctx.fillText("5G Terrestrial", (nodes.fog.x + nodes.cloud.x)/2 * width, (nodes.fog.y + nodes.cloud.y)/2 * height - 10);
+        ctx.fillStyle = fiberUp ? '#10b981' : '#ef4444';
+        ctx.fillText("Оптоволокно (Провайдер 1)", (nodes.router.x + nodes.cloud.x)/2 * width, (nodes.router.y + nodes.cloud.y)/2 * height - 10);
 
-        // Fog -> Cloud (NTN Satellite)
-        ctx.strokeStyle = !terrestrialUp ? '#f59e0b' : '#2b2b36';
+        // Backup Channel (4G/5G)
+        ctx.strokeStyle = !fiberUp ? '#3b82f6' : '#2b2b36';
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
-        ctx.moveTo(nodes.fog.x * width, nodes.fog.y * height);
-        ctx.quadraticCurveTo((nodes.fog.x + nodes.cloud.x)/2 * width, height * 0.1, nodes.cloud.x * width, nodes.cloud.y * height);
+        ctx.moveTo(nodes.router.x * width, nodes.router.y * height);
+        ctx.quadraticCurveTo((nodes.router.x + nodes.cloud.x)/2 * width, height * 0.2, nodes.cloud.x * width, nodes.cloud.y * height);
         ctx.stroke();
         
-        // Satellite Icon/Label
-        ctx.fillStyle = !terrestrialUp ? '#f59e0b' : '#4f5160';
-        ctx.fillText("LEO Satellite (NTN)", (nodes.fog.x + nodes.cloud.x)/2 * width, height * 0.25);
+        ctx.fillStyle = !fiberUp ? '#3b82f6' : '#4f5160';
+        ctx.fillText("4G/5G Вишка (Резерв)", (nodes.router.x + nodes.cloud.x)/2 * width, height * 0.35);
         ctx.setLineDash([]);
     }
 
-    // --- Charts Setup ---
+    // --- Charts ---
     Chart.defaults.color = '#94a1b2'; Chart.defaults.font.size = 9;
     const chartOpts = { responsive: true, maintainAspectRatio: false, animation: false, plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { grid: { color: '#2b2b36' } } } };
 
@@ -357,8 +351,8 @@
     const bufferChart = new Chart(document.getElementById('bufferChart'), {
         type: 'bar',
         data: { labels: Array(30).fill(''), datasets: [
-            { label: 'QoS 0 (Телеметрія)', backgroundColor: '#3f414d', data: Array(30).fill(0) },
-            { label: 'QoS 1 (Аномалії)', backgroundColor: '#f59e0b', data: Array(30).fill(0) }
+            { label: 'Телеметрія', backgroundColor: '#3f414d', data: Array(30).fill(0) },
+            { label: 'Тривоги', backgroundColor: '#f59e0b', data: Array(30).fill(0) }
         ]},
         options: { ...chartOpts, scales: { x: { stacked: true, display: false }, y: { stacked: true, min: 0, max: 50, grid: { color: '#2b2b36' } } } }
     });
@@ -369,56 +363,51 @@
         options: { ...chartOpts, scales: { ...chartOpts.scales, y: { min: 0, max: 30, grid: { color: '#2b2b36' } } } }
     });
 
-
-    // --- Main Loop ---
     let frame = 0;
     function animate() {
         ctx.clearRect(0, 0, width, height);
         drawLinks();
         
         drawNode(nodes.sensor);
-        drawNode(nodes.edge, frame % 120 < 10); // Блимає при обчисленнях
-        drawNode(nodes.fog, fogBuffer.anomalies.length > 0 || fogBuffer.telemetry.length > 0);
+        drawNode(nodes.edge, frame % 120 < 10); 
+        drawNode(nodes.router, routerBuffer.alerts.length > 0 || routerBuffer.telemetry.length > 0);
         drawNode(nodes.cloud);
 
-        // Process Packets
         packets = packets.filter(p => { p.draw(ctx); return !p.update(); });
         
-        // Fog Queue Processing (QoS Routing)
-        // Наземний канал передає швидко, Супутник - дуже повільно
-        let txCapacity = terrestrialUp ? 3 : (frame % 3 === 0 ? 1 : 0); 
+        // QoS Logic: На оптоволокні пропускаємо все. На мобільній - обмежуємо.
+        let txCapacity = fiberUp ? 3 : (frame % 2 === 0 ? 1 : 0); 
         
         for (let i = 0; i < txCapacity; i++) {
             let nextPacket = null;
-            // Строгий QoS: спочатку FL, потім Аномалії, потім Телеметрія
-            if (fogBuffer.fl_weights.length > 0) nextPacket = fogBuffer.fl_weights.shift();
-            else if (fogBuffer.anomalies.length > 0) nextPacket = fogBuffer.anomalies.shift();
-            else if (fogBuffer.telemetry.length > 0) {
-                // Якщо працює тільки супутник, ми дропаємо звичайну телеметрію щоб не забити канал
-                if (!terrestrialUp && fogBuffer.telemetry.length > 10) {
-                    fogBuffer.telemetry.shift(); // Drop packet
+            // Пріоритети SD-WAN
+            if (routerBuffer.sync.length > 0) nextPacket = routerBuffer.sync.shift();
+            else if (routerBuffer.alerts.length > 0) nextPacket = routerBuffer.alerts.shift();
+            else if (routerBuffer.telemetry.length > 0) {
+                // Відсікання зайвої телеметрії для економії 4G трафіку
+                if (!fiberUp && routerBuffer.telemetry.length > 5) {
+                    routerBuffer.telemetry.shift(); 
                     continue; 
                 }
-                nextPacket = fogBuffer.telemetry.shift();
+                nextPacket = routerBuffer.telemetry.shift();
             }
 
             if (nextPacket) {
-                packets.push(new Packet(nextPacket.type, 3, nodes.fog, nodes.cloud));
+                packets.push(new Packet(nextPacket.type, 3, nodes.router, nodes.cloud));
             }
         }
 
-        // Візуалізація переповнення буфера
-        document.getElementById('stat-buffer').innerText = `${fogBuffer.telemetry.length + fogBuffer.anomalies.length} пак.`;
-        if(fogBuffer.telemetry.length + fogBuffer.anomalies.length > 30) {
+        document.getElementById('stat-buffer').innerText = `${routerBuffer.telemetry.length + routerBuffer.alerts.length} шт.`;
+        if(routerBuffer.telemetry.length + routerBuffer.alerts.length > 30) {
             ctx.fillStyle = '#ef4444'; ctx.font = '12px sans-serif';
-            ctx.fillText("BUFFER WARNING", nodes.fog.x * width, nodes.fog.y * height - 35);
+            ctx.fillText("QoS: ВТРАТА ПАКЕТІВ", nodes.router.x * width, nodes.router.y * height - 35);
         }
 
         frame++;
         requestAnimationFrame(animate);
     }
 
-    // --- Data Generators ---
+    // Data Generator
     setInterval(() => {
         timeT += 0.2;
         let signal = Math.sin(timeT) * 30; 
@@ -439,10 +428,9 @@
         sensorChart.data.datasets[0].borderColor = isSpike ? '#f59e0b' : '#3b82f6';
         sensorChart.update();
 
-        // Фізичний рівень генерує пакети до Edge
         if (isSpike) {
-            packets.push(new Packet('anomaly', 1, nodes.sensor, nodes.edge));
-            packets.push(new Packet('anomaly', 1, nodes.sensor, nodes.edge));
+            packets.push(new Packet('alert', 1, nodes.sensor, nodes.edge));
+            packets.push(new Packet('alert', 1, nodes.sensor, nodes.edge));
         } else if (isNoise) {
             packets.push(new Packet('noise', 1, nodes.sensor, nodes.edge));
         } else if (Math.random() < 0.3) {
@@ -450,26 +438,26 @@
         }
     }, 100);
 
-    // Federated Learning Tick (Кожні 3 секунди Edge відправляє оновлення ваг)
+    // Sync Tick 
     setInterval(() => {
-        packets.push(new Packet('fl', 1, nodes.edge, nodes.edge)); // Логічно створюємо на Edge
-        packets[packets.length-1].handleEdgeLogic(); // І відразу штовхаємо на Fog
+        packets.push(new Packet('sync', 1, nodes.edge, nodes.edge)); 
+        packets[packets.length-1].handleEdgeLogic(); 
         statFL++;
         document.getElementById('stat-fl').innerText = statFL;
     }, 3000);
 
-    // Оновлення метрик графіка
+    // Chart Updates
     setInterval(() => {
-        bufferChart.data.datasets[0].data.push(fogBuffer.telemetry.length);
+        bufferChart.data.datasets[0].data.push(routerBuffer.telemetry.length);
         bufferChart.data.datasets[0].data.shift();
-        bufferChart.data.datasets[1].data.push(fogBuffer.anomalies.length);
+        bufferChart.data.datasets[1].data.push(routerBuffer.alerts.length);
         bufferChart.data.datasets[1].data.shift();
         bufferChart.update();
 
         netChart.data.datasets[0].data.push(networkThroughput);
         netChart.data.datasets[0].data.shift();
-        netChart.data.datasets[0].borderColor = terrestrialUp ? '#10b981' : '#f59e0b';
-        netChart.data.datasets[0].backgroundColor = terrestrialUp ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)';
+        netChart.data.datasets[0].borderColor = fiberUp ? '#10b981' : '#3b82f6';
+        netChart.data.datasets[0].backgroundColor = fiberUp ? 'rgba(16, 185, 129, 0.1)' : 'rgba(59, 130, 246, 0.1)';
         netChart.update();
         networkThroughput = 0;
     }, 500);
@@ -478,29 +466,29 @@
     document.getElementById('anomalyBtn').addEventListener('click', (e) => {
         isAnomaly = !isAnomaly;
         if (isAnomaly) {
-            e.target.innerText = '🛑 Зупинити збій сенсора';
+            e.target.innerText = '🛑 Скинути тривогу';
             e.target.classList.add('active-red');
         } else {
-            e.target.innerText = 'Згенерувати критичний збій';
+            e.target.innerText = 'Симуляція інциденту (Тривога)';
             e.target.classList.remove('active-red');
         }
     });
 
     document.getElementById('linkBtn').addEventListener('click', (e) => {
-        terrestrialUp = !terrestrialUp;
-        const tStatus = document.getElementById('terr-status');
-        const nStatus = document.getElementById('ntn-status');
+        fiberUp = !fiberUp;
+        const fStatus = document.getElementById('fiber-status');
+        const mStatus = document.getElementById('mobile-status');
         
-        if (!terrestrialUp) {
-            e.target.innerText = 'Відновити наземний канал (5G)';
+        if (!fiberUp) {
+            e.target.innerText = 'Відновити оптоволокно';
             e.target.classList.add('active-red');
-            tStatus.className = 'status-badge bg-red'; tStatus.innerText = 'DOWN (FAIL)';
-            nStatus.className = 'status-badge bg-green'; nStatus.innerText = 'ACTIVE (SAT)';
+            fStatus.className = 'status-badge bg-red'; fStatus.innerText = 'ОФЛАЙН (АВАРІЯ)';
+            mStatus.className = 'status-badge bg-blue'; mStatus.innerText = 'АКТИВНИЙ (ТРАФІК ЛІМІТ)';
         } else {
-            e.target.innerText = 'Вимкнути наземний канал (5G)';
+            e.target.innerText = 'Вимкнути провайдера (Обрив)';
             e.target.classList.remove('active-red');
-            tStatus.className = 'status-badge bg-green'; tStatus.innerText = 'UP (100%)';
-            nStatus.className = 'status-badge bg-orange'; nStatus.innerText = 'STANDBY';
+            fStatus.className = 'status-badge bg-green'; fStatus.innerText = 'ОНЛАЙН (1 Гбіт/с)';
+            mStatus.className = 'status-badge bg-blue'; mStatus.innerText = 'ОЧІКУВАННЯ';
         }
     });
 
