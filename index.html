@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IIoT: Оптимізація Edge-обчислень</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #16161a;
+            --panel-bg: #24262d;
+            --text-main: #e4e4e6;
+            --text-muted: #94a1b2;
+            --accent-blue: #3b82f6;
+            --accent-red: #ef4444;
+            --accent-green: #10b981;
+            --border-color: #3f414d;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .dashboard {
+            background-color: var(--panel-bg);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 900px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .header-stats {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+        }
+
+        .stat-value {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: var(--text-main);
+            display: block;
+            margin-top: 4px;
+        }
+
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            background-color: #1a1c23;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        #simCanvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .chart-container {
+            width: 100%;
+            height: 150px;
+            margin-bottom: 20px;
+        }
+
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            background-color: #1a1c23;
+            padding: 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .control-group {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        input[type=range] {
+            flex-grow: 1;
+            margin: 0 15px;
+            accent-color: var(--accent-blue);
+        }
+
+        button {
+            background-color: var(--border-color);
+            color: var(--text-main);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+            width: 100%;
+        }
+
+        button:hover {
+            background-color: #4f5160;
+        }
+
+        button.active-anomaly {
+            background-color: var(--accent-red);
+            color: white;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider { background-color: var(--accent-blue); }
+        input:checked + .slider:before { transform: translateX(26px); }
+
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div class="header-stats">
+        <div>IIoT: Оптимізація Edge-обчислень</div>
+        <div>Блоковано (Б)<span class="stat-value" id="val-blocked">0</span></div>
+        <div>Режим (Б)<span class="stat-value" id="val-mode" style="color: var(--accent-green)">СТАБІЛЬНИЙ</span></div>
+        <div>Bandwidth A<span class="stat-value" id="val-bw-a" style="color: var(--accent-red)">0%</span></div>
+        <div>Bandwidth B<span class="stat-value" id="val-bw-b" style="color: var(--accent-green)">0%</span></div>
+    </div>
+
+    <div class="canvas-container">
+        <canvas id="simCanvas"></canvas>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="networkChart"></canvas>
+    </div>
+
+    <div class="controls">
+        <div class="control-group">
+            <label>Чутливість Фільтра</label>
+            <input type="range" id="filterSlider" min="0" max="1" step="0.1" value="0.8">
+            <span id="filterVal">0.8</span>
+        </div>
+        <div class="control-group">
+            <label>Активно</label>
+            <label class="toggle-switch">
+                <input type="checkbox" id="activeToggle" checked>
+                <span class="slider"></span>
+            </label>
+        </div>
+        <div>
+            <button id="anomalyBtn">Створити Аномалію</button>
+        </div>
+        <div>
+            <button id="resetBtn">Скинути</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // --- Симуляція та Візуалізація (Canvas) ---
+    const canvas = document.getElementById('simCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    let width, height;
+    function resizeCanvas() {
+        width = canvas.width = canvas.parentElement.clientWidth;
+        height = canvas.height = canvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Параметри симуляції
+    let isActive = true;
+    let isAnomaly = false;
+    let filterSensitivity = 0.8;
+    let blockedPackets = 0;
+    
+    // Метрики
+    let packetsA = 0;
+    let packetsB = 0;
+    let historyA = [];
+    let historyB = [];
+
+    // Елементи UI
+    const blockedEl = document.getElementById('val-blocked');
+    const modeEl = document.getElementById('val-mode');
+    const bwAEl = document.getElementById('val-bw-a');
+    const bwBEl = document.getElementById('val-bw-b');
+
+    // Координати вузлів
+    const nodes = {
+        sensor: { x: 0.1, y: 0.5, label: 'СЕНСОР', type: 'box' },
+        gwA: { x: 0.5, y: 0.25, label: 'СЦЕНАРІЙ А: ТРАДИЦІЙНИЙ', type: 'text' },
+        gwB: { x: 0.5, y: 0.75, label: 'СЦЕНАРІЙ Б: ВДОСКОНАЛЕНИЙ\n(ESP32 / CORTEX-M)', type: 'box' },
+        cloud: { x: 0.9, y: 0.5, label: 'ХМАРА (CLOUD)', type: 'box' },
+        bin: { x: 0.5, y: 0.95, label: 'КОШИК', type: 'bin' }
+    };
+
+    class Packet {
+        constructor(path) {
+            this.path = path; // 'A' або 'B'
+            this.x = nodes.sensor.x * width;
+            this.y = nodes.sensor.y * height;
+            this.progress = 0;
+            this.speed = 0.01 + Math.random() * 0.005;
+            this.isNoise = Math.random() < 0.7; // 70% пакетів при аномалії - шум
+            this.state = 'moving'; // moving, dropping
+            
+            // Шлях A: Sensor -> Cloud
+            // Шлях B: Sensor -> Edge -> (Cloud або Bin)
+            this.targetY = path === 'A' ? nodes.gwA.y * height : nodes.gwB.y * height;
+        }
+
+        update() {
+            if (this.state === 'dropping') {
+                this.y += 5;
+                if (this.y > height) return true; // видалити
+                return false;
+            }
+
+            this.progress += this.speed;
+            
+            // Рух по X від сенсора до хмари
+            this.x = (nodes.sensor.x + (nodes.cloud.x - nodes.sensor.x) * this.progress) * width;
+            
+            // Рух по Y (парабола до шлюзу/edge)
+            if (this.progress < 0.5) {
+                this.y = (nodes.sensor.y + (nodes.targetY / height - nodes.sensor.y) * (this.progress * 2)) * height;
+            } else {
+                this.y = (this.targetY / height + (nodes.cloud.y - this.targetY / height) * ((this.progress - 0.5) * 2)) * height;
+            }
+
+            // Логіка Edge (Шлях B) на етапі 50%
+            if (this.path === 'B' && this.progress >= 0.5 && this.progress < 0.5 + this.speed) {
+                // Попередня фільтрація: відсікання "шуму"
+                if (isAnomaly && this.isNoise && Math.random() < filterSensitivity) {
+                    this.state = 'dropping';
+                    blockedPackets++;
+                    blockedEl.innerText = blockedPackets;
+                } else if (!isAnomaly && Math.random() < 0.8) {
+                    // Адаптивна частота опитування: зниження частоти передачі при стабільних показниках
+                    this.state = 'dropping'; 
+                }
+            }
+
+            if (this.progress >= 1 && this.state !== 'dropping') {
+                if (this.path === 'A') packetsA++;
+                if (this.path === 'B') packetsB++;
+                return true; // доставлено, видалити
+            }
+            return false;
+        }
+
+        draw(ctx) {
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, 4, 0, Math.PI * 2);
+            ctx.fillStyle = this.state === 'dropping' ? '#ef4444' : '#ffffff';
+            ctx.fill();
+            if (isAnomaly && this.isNoise && this.state !== 'dropping') {
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+    }
+
+    let packets = [];
+    let frameCount = 0;
+
+    function drawNode(node, isEdge = false) {
+        ctx.fillStyle = isEdge ? '#2b303b' : 'rgba(255,255,255,0.05)';
+        ctx.strokeStyle = isEdge ? '#10b981' : '#3f414d';
+        ctx.lineWidth = 2;
+        
+        const nw = 120;
+        const nh = 60;
+        const nx = node.x * width - nw/2;
+        const ny = node.y * height - nh/2;
+        
+        if (node.type === 'box') {
+            if(isEdge) ctx.setLineDash([5, 5]);
+            ctx.beginPath();
+            ctx.roundRect(nx, ny, nw, nh, 8);
+            ctx.fill();
+            ctx.stroke();
+            ctx.setLineDash([]);
+        }
+
+        ctx.fillStyle = '#94a1b2';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        
+        const lines = node.label.split('\n');
+        lines.forEach((line, i) => {
+            ctx.fillText(line, node.x * width, node.y * height + (i * 14) - ((lines.length-1)*7));
+        });
+    }
+
+    function animate() {
+        if (isActive) {
+            ctx.clearRect(0, 0, width, height);
+
+            // Малювання ліній зв'язку
+            ctx.strokeStyle = '#3f414d';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(nodes.sensor.x * width, nodes.sensor.y * height);
+            ctx.lineTo(nodes.gwA.x * width, nodes.gwA.y * height);
+            ctx.lineTo(nodes.cloud.x * width, nodes.cloud.y * height);
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.moveTo(nodes.sensor.x * width, nodes.sensor.y * height);
+            ctx.lineTo(nodes.gwB.x * width, nodes.gwB.y * height);
+            ctx.lineTo(nodes.cloud.x * width, nodes.cloud.y * height);
+            ctx.stroke();
+
+            // Малювання вузлів
+            drawNode(nodes.sensor);
+            drawNode(nodes.cloud);
+            drawNode(nodes.gwB, true);
+            
+            ctx.fillStyle = '#94a1b2';
+            ctx.fillText(nodes.gwA.label, nodes.gwA.x * width, nodes.gwA.y * height - 20);
+            ctx.fillText(nodes.bin.label, nodes.bin.x * width, nodes.bin.y * height);
+
+            // Генерація пакетів
+            let spawnRate = isAnomaly ? 2 : 30; // Аномалія генерує пакети дуже часто
+            if (frameCount % spawnRate === 0) {
+                packets.push(new Packet('A'));
+                packets.push(new Packet('B'));
+            }
+
+            // Оновлення та малювання пакетів
+            packets = packets.filter(p => {
+                p.draw(ctx);
+                return !p.update();
+            });
+
+            frameCount++;
+        }
+        requestAnimationFrame(animate);
+    }
+
+    // --- Графік (Chart.js) ---
+    const chartCtx = document.getElementById('networkChart').getContext('2d');
+    const networkChart = new Chart(chartCtx, {
+        type: 'line',
+        data: {
+            labels: Array(40).fill(''),
+            datasets: [
+                {
+                    label: 'Сценарій А (Традиційний)',
+                    borderColor: '#ef4444',
+                    borderWidth: 2,
+                    data: Array(40).fill(0),
+                    pointRadius: 0,
+                    tension: 0.2
+                },
+                {
+                    label: 'Сценарій Б (Edge)',
+                    borderColor: '#10b981',
+                    borderWidth: 2,
+                    data: Array(40).fill(0),
+                    pointRadius: 0,
+                    tension: 0.2
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
+            scales: {
+                y: { min: 0, max: 100, grid: { color: '#2b2b36' }, ticks: { color: '#94a1b2' } },
+                x: { grid: { display: false } }
+            },
+            plugins: { legend: { display: false } }
+        }
+    });
+
+    // Оновлення метрик щосекунди
+    setInterval(() => {
+        if (!isActive) return;
+
+        // Конвертація в умовні відсотки пропускної здатності
+        let loadA = Math.min(100, packetsA * 5); 
+        let loadB = Math.min(100, packetsB * 5);
+        
+        bwAEl.innerText = loadA + '%';
+        bwBEl.innerText = loadB + '%';
+
+        networkChart.data.datasets[0].data.push(loadA);
+        networkChart.data.datasets[0].data.shift();
+        networkChart.data.datasets[1].data.push(loadB);
+        networkChart.data.datasets[1].data.shift();
+        networkChart.update();
+
+        packetsA = 0;
+        packetsB = 0;
+    }, 500);
+
+    // --- Управління ---
+    document.getElementById('filterSlider').addEventListener('input', (e) => {
+        filterSensitivity = parseFloat(e.target.value);
+        document.getElementById('filterVal').innerText = filterSensitivity.toFixed(1);
+    });
+
+    const anomalyBtn = document.getElementById('anomalyBtn');
+    anomalyBtn.addEventListener('click', () => {
+        isAnomaly = !isAnomaly;
+        if (isAnomaly) {
+            anomalyBtn.innerText = 'Вимкнути Аномалію';
+            anomalyBtn.classList.add('active-anomaly');
+            modeEl.innerText = 'АНОМАЛІЯ';
+            modeEl.style.color = 'var(--accent-red)';
+        } else {
+            anomalyBtn.innerText = 'Створити Аномалію';
+            anomalyBtn.classList.remove('active-anomaly');
+            modeEl.innerText = 'СТАБІЛЬНИЙ';
+            modeEl.style.color = 'var(--accent-green)';
+        }
+    });
+
+    document.getElementById('activeToggle').addEventListener('change', (e) => {
+        isActive = e.target.checked;
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+        packets = [];
+        blockedPackets = 0;
+        blockedEl.innerText = '0';
+        networkChart.data.datasets[0].data = Array(40).fill(0);
+        networkChart.data.datasets[1].data = Array(40).fill(0);
+        networkChart.update();
+    });
+
+    // Старт
+    animate();
+</script>
+</body>
+</html>
