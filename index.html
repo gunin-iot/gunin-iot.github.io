@@ -66,22 +66,21 @@
 
         button {
             background-color: var(--border-color); color: var(--text-main); border: none;
-            padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.9em; transition: 0.2s;
+            padding: 8px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em; transition: 0.2s;
         }
         button:hover { background-color: #4f5160; }
         button.active-red { background-color: var(--accent-red); color: white; }
-        button.active-ai { background-color: var(--accent-ai); color: white; }
+        button.active-orange { background-color: var(--accent-orange); color: white; }
 
         input[type=range] {
-            flex-grow: 1;
-            margin: 0 10px;
-            accent-color: var(--accent-orange);
+            flex-grow: 1; margin: 0 10px; accent-color: var(--accent-orange);
         }
 
         .status-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; }
         .bg-green { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
         .bg-red { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
         .bg-blue { background: rgba(59, 130, 246, 0.2); color: var(--accent-blue); }
+        .bg-gray { background: rgba(148, 161, 178, 0.2); color: var(--text-muted); }
 
         .flex-between { display: flex; justify-content: space-between; align-items: center; font-size: 0.85em;}
         
@@ -106,7 +105,7 @@
             <canvas id="sensorChart"></canvas>
         </div>
         <div class="chart-container">
-            <div class="chart-title">Буфер Маршрутизатора (QoS)</div>
+            <div class="chart-title">Буфер Маршрутизатора (Об'єм: 60)</div>
             <canvas id="bufferChart"></canvas>
         </div>
         <div class="chart-container">
@@ -119,14 +118,17 @@
         <!-- Panel 1: Edge / AI -->
         <div class="control-panel">
             <div class="panel-title ai">IoT Контролер (Локально)</div>
-            <button id="anomalyBtn">Симуляція інциденту (Тривога)</button>
+            <div style="display: flex; gap: 5px;">
+                <button id="edgeBtn" style="flex: 1;">Вимкнути МК</button>
+                <button id="anomalyBtn" style="flex: 1;">Тривога</button>
+            </div>
             <div class="flex-between">
                 <span>Сила інциденту:</span>
                 <input type="range" id="anomalyStrength" min="1" max="5" step="0.5" value="2.5" disabled>
                 <span id="anomalyStrengthVal" style="font-weight:bold; color:var(--text-main); min-width: 20px; text-align:right;">2.5</span>
             </div>
             <div class="flex-between">
-                <span>Фільтр шумів:</span>
+                <span>Стан обробки (Edge):</span>
                 <span class="status-badge bg-green" id="ml-status">АКТИВНИЙ</span>
             </div>
         </div>
@@ -148,18 +150,21 @@
         <!-- Panel 3: Stats -->
         <div class="control-panel">
             <div class="panel-title">Метрики Трафіку</div>
-            <div class="flex-between"><span>Відкинуто (Шум):</span> <strong id="stat-dropped">0</strong></div>
-            <div class="flex-between"><span>Критичні події:</span> <strong id="stat-anomalies" style="color: var(--accent-orange)">0</strong></div>
+            <div class="flex-between"><span>Відкинуто на Edge (Шум):</span> <strong id="stat-dropped">0</strong></div>
+            <div class="flex-between">
+                <span>Втрати буфера (QoS):</span> 
+                <strong id="stat-router-dropped" style="color: var(--accent-red)">0</strong>
+            </div>
             <div class="flex-between"><span>Пакети в буфері:</span> <strong id="stat-buffer">0 шт.</strong></div>
-            <div class="flex-between"><span>Службові дані (AI):</span> <strong id="stat-fl" style="color: var(--accent-ai)">0</strong></div>
+            <div class="flex-between"><span>Критичні події:</span> <strong id="stat-anomalies" style="color: var(--accent-orange)">0</strong></div>
         </div>
     </div>
     
     <div class="legend">
-        <div class="leg-item"><div class="dot" style="background:#fff"></div> Телеметрія (Клімат/Світло)</div>
-        <div class="leg-item"><div class="dot" style="background:var(--accent-orange)"></div> Тривога (Пріоритет 1)</div>
-        <div class="leg-item"><div class="dot" style="background:var(--accent-ai)"></div> Синхронізація (Пріоритет 2)</div>
-        <div class="leg-item"><div class="dot" style="background:var(--accent-red)"></div> Відхилений Шум</div>
+        <div class="leg-item"><div class="dot" style="background:#fff"></div> Телеметрія</div>
+        <div class="leg-item"><div class="dot" style="background:var(--accent-orange)"></div> Тривога</div>
+        <div class="leg-item"><div class="dot" style="background:var(--accent-ai)"></div> Синхронізація</div>
+        <div class="leg-item"><div class="dot" style="background:var(--accent-red)"></div> Відхилений Шум/Втрати</div>
     </div>
 </div>
 
@@ -177,32 +182,27 @@
 
     // --- System State ---
     let isAnomaly = false;
-    let anomalyStrength = 2.5; // Сила аномалії
+    let anomalyStrength = 2.5;
     let fiberUp = true;
+    let edgeUp = true; // Стан мікроконтролера
     let timeT = 0;
+    const MAX_BUFFER = 60;
     
     // Stats
-    let statDropped = 0;
+    let statDroppedEdge = 0;
+    let statDroppedRouter = 0;
     let statAnomalies = 0;
-    let statFL = 0;
     let networkThroughput = 0;
 
-    // Nodes definition
+    // Nodes
     const nodes = {
         sensor: { x: 0.1, y: 0.7, label: 'СЕНСОР\n(Кімната)', type: 'box' },
-        edge: { x: 0.35, y: 0.7, label: 'МІКРОКОНТРОЛЕР\n(Обробка)', type: 'box' },
+        edge: { x: 0.35, y: 0.7, label: 'МІКРОКОНТРОЛЕР\n(Фільтрація)', type: 'box' },
         router: { x: 0.6, y: 0.7, label: 'МАРШРУТИЗАТОР\n(SD-WAN)', type: 'box' },
         cloud: { x: 0.9, y: 0.5, label: 'КОРПОРАТИВНА\nХМАРА', type: 'box' }
     };
 
-    // Store & Forward Buffer
-    const routerBuffer = {
-        alerts: [],
-        sync: [],
-        telemetry: []
-    };
-
-    // --- Packets System ---
+    const routerBuffer = { alerts: [], sync: [], telemetry: [] };
     let packets = [];
 
     class Packet {
@@ -251,15 +251,27 @@
         }
 
         handleEdgeLogic() {
-            if (this.type === 'noise') {
-                let drop = new Packet('noise', 0, nodes.edge, nodes.edge);
-                drop.state = 'dropping';
-                packets.push(drop);
-                statDropped++;
-                document.getElementById('stat-dropped').innerText = statDropped;
+            if (edgeUp) {
+                // Мікроконтролер працює: фільтруємо шум
+                if (this.type === 'noise') {
+                    let drop = new Packet('noise', 0, nodes.edge, nodes.edge);
+                    drop.state = 'dropping';
+                    packets.push(drop);
+                    statDroppedEdge++;
+                    document.getElementById('stat-dropped').innerText = statDroppedEdge;
+                } else {
+                    packets.push(new Packet(this.type, 2, nodes.edge, nodes.router));
+                    if (this.type === 'alert') {
+                        statAnomalies++;
+                        document.getElementById('stat-anomalies').innerText = statAnomalies;
+                    }
+                }
             } else {
-                packets.push(new Packet(this.type, 2, nodes.edge, nodes.router));
-                if (this.type === 'alert') {
+                // МК вимкнено: пропускаємо ВСЕ на маршрутизатор (як 'telemetry', щоб забити буфер)
+                // Шуми стають звичайним трафіком, який маршрутизатор не вміє розрізняти
+                let outType = this.type === 'noise' ? 'telemetry' : this.type; 
+                packets.push(new Packet(outType, 2, nodes.edge, nodes.router));
+                if (outType === 'alert') {
                     statAnomalies++;
                     document.getElementById('stat-anomalies').innerText = statAnomalies;
                 }
@@ -267,9 +279,23 @@
         }
 
         handleRouterLogic() {
+            let currentTotal = routerBuffer.alerts.length + routerBuffer.sync.length + routerBuffer.telemetry.length;
+            
+            // Жорсткий ліміт буфера маршрутизатора
+            if (currentTotal >= MAX_BUFFER) {
+                statDroppedRouter++;
+                document.getElementById('stat-router-dropped').innerText = statDroppedRouter;
+                
+                // Візуалізуємо втрату пакета (падає від роутера)
+                let drop = new Packet(this.type, 0, nodes.router, nodes.router);
+                drop.state = 'dropping';
+                packets.push(drop);
+                return;
+            }
+
             if (this.type === 'alert') routerBuffer.alerts.push(this);
             else if (this.type === 'sync') routerBuffer.sync.push(this);
-            else routerBuffer.telemetry.push(this);
+            else routerBuffer.telemetry.push(this); 
         }
 
         draw(ctx) {
@@ -291,7 +317,14 @@
     // --- Node Rendering ---
     function drawNode(node, isActive = false) {
         ctx.fillStyle = '#1e2029';
-        ctx.strokeStyle = isActive ? '#3b82f6' : '#2b2b36';
+        
+        // Якщо це Edge і він вимкнений, робимо його сірим/червоним
+        if (node.label.includes('МІКРО') && !edgeUp) {
+            ctx.strokeStyle = '#ef4444';
+        } else {
+            ctx.strokeStyle = isActive ? '#3b82f6' : '#2b2b36';
+        }
+        
         ctx.lineWidth = 2;
         
         const nw = 130; const nh = 45;
@@ -300,10 +333,12 @@
         ctx.beginPath(); ctx.roundRect(nx, ny, nw, nh, 6);
         ctx.fill(); ctx.stroke();
 
-        ctx.fillStyle = '#94a1b2'; ctx.font = '10px sans-serif';
+        ctx.fillStyle = (node.label.includes('МІКРО') && !edgeUp) ? '#ef4444' : '#94a1b2'; 
+        ctx.font = '10px sans-serif';
         ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
         
-        const lines = node.label.split('\n');
+        const labelText = (node.label.includes('МІКРО') && !edgeUp) ? 'МІКРОКОНТРОЛЕР\n(BYPASS / ВИМК)' : node.label;
+        const lines = labelText.split('\n');
         lines.forEach((line, i) => {
             ctx.fillText(line, node.x * width, node.y * height + (i * 12) - ((lines.length-1)*6));
         });
@@ -313,14 +348,14 @@
         ctx.lineWidth = 1.5;
         
         // LAN
-        ctx.strokeStyle = '#2b2b36';
+        ctx.strokeStyle = edgeUp ? '#2b2b36' : '#ef4444'; // Червоний лінк, якщо потоки йдуть сирі
         ctx.beginPath();
         ctx.moveTo(nodes.sensor.x * width, nodes.sensor.y * height);
         ctx.lineTo(nodes.edge.x * width, nodes.edge.y * height);
         ctx.lineTo(nodes.router.x * width, nodes.router.y * height);
         ctx.stroke();
 
-        // Main Channel (Fiber)
+        // Fiber
         ctx.strokeStyle = fiberUp ? '#10b981' : '#ef4444';
         ctx.setLineDash(fiberUp ? [] : [5, 5]);
         ctx.beginPath();
@@ -331,7 +366,7 @@
         ctx.fillStyle = fiberUp ? '#10b981' : '#ef4444';
         ctx.fillText("Оптоволокно (Провайдер 1)", (nodes.router.x + nodes.cloud.x)/2 * width, (nodes.router.y + nodes.cloud.y)/2 * height - 10);
 
-        // Backup Channel (4G/5G)
+        // 4G
         ctx.strokeStyle = !fiberUp ? '#3b82f6' : '#2b2b36';
         ctx.setLineDash([4, 4]);
         ctx.beginPath();
@@ -354,13 +389,14 @@
         options: { ...chartOpts, scales: { ...chartOpts.scales, y: { min: -150, max: 150, grid: { color: '#2b2b36' } } } }
     });
 
+    // Оновлений динамічний Area Chart для буфера
     const bufferChart = new Chart(document.getElementById('bufferChart'), {
-        type: 'bar',
-        data: { labels: Array(30).fill(''), datasets: [
-            { label: 'Телеметрія', backgroundColor: '#3f414d', data: Array(30).fill(0) },
-            { label: 'Тривоги', backgroundColor: '#f59e0b', data: Array(30).fill(0) }
+        type: 'line',
+        data: { labels: Array(40).fill(''), datasets: [
+            { label: 'Телеметрія/Шум', borderColor: '#3f414d', backgroundColor: 'rgba(63, 65, 77, 0.6)', fill: true, data: Array(40).fill(0), pointRadius: 0, tension: 0.3 },
+            { label: 'Тривоги', borderColor: '#f59e0b', backgroundColor: 'rgba(245, 158, 11, 0.6)', fill: true, data: Array(40).fill(0), pointRadius: 0, tension: 0.3 }
         ]},
-        options: { ...chartOpts, scales: { x: { stacked: true, display: false }, y: { stacked: true, min: 0, max: 50, grid: { color: '#2b2b36' } } } }
+        options: { ...chartOpts, scales: { x: { display: false }, y: { stacked: true, min: 0, max: MAX_BUFFER, grid: { color: '#2b2b36' } } } }
     });
 
     const netChart = new Chart(document.getElementById('networkChart'), {
@@ -375,13 +411,13 @@
         drawLinks();
         
         drawNode(nodes.sensor);
-        drawNode(nodes.edge, frame % 120 < 10); 
+        drawNode(nodes.edge, edgeUp && (frame % 120 < 10)); 
         drawNode(nodes.router, routerBuffer.alerts.length > 0 || routerBuffer.telemetry.length > 0);
         drawNode(nodes.cloud);
 
         packets = packets.filter(p => { p.draw(ctx); return !p.update(); });
         
-        // QoS Logic
+        // Відправка з маршрутизатора
         let txCapacity = fiberUp ? 3 : (frame % 2 === 0 ? 1 : 0); 
         
         for (let i = 0; i < txCapacity; i++) {
@@ -389,22 +425,30 @@
             if (routerBuffer.sync.length > 0) nextPacket = routerBuffer.sync.shift();
             else if (routerBuffer.alerts.length > 0) nextPacket = routerBuffer.alerts.shift();
             else if (routerBuffer.telemetry.length > 0) {
-                if (!fiberUp && routerBuffer.telemetry.length > 5) {
-                    routerBuffer.telemetry.shift(); 
+                // Проактивний QoS: якщо канал вузький (4G) і черга росте, відкидаємо менш важливі дані
+                if (!fiberUp && routerBuffer.telemetry.length > 15) {
+                    let droppedPkt = routerBuffer.telemetry.shift(); 
+                    statDroppedRouter++;
+                    document.getElementById('stat-router-dropped').innerText = statDroppedRouter;
+                    
+                    let dropVis = new Packet(droppedPkt.type, 0, nodes.router, nodes.router);
+                    dropVis.state = 'dropping';
+                    packets.push(dropVis);
                     continue; 
                 }
                 nextPacket = routerBuffer.telemetry.shift();
             }
 
-            if (nextPacket) {
-                packets.push(new Packet(nextPacket.type, 3, nodes.router, nodes.cloud));
-            }
+            if (nextPacket) packets.push(new Packet(nextPacket.type, 3, nodes.router, nodes.cloud));
         }
 
-        document.getElementById('stat-buffer').innerText = `${routerBuffer.telemetry.length + routerBuffer.alerts.length} шт.`;
-        if(routerBuffer.telemetry.length + routerBuffer.alerts.length > 30) {
-            ctx.fillStyle = '#ef4444'; ctx.font = '12px sans-serif';
-            ctx.fillText("QoS: ВТРАТА ПАКЕТІВ", nodes.router.x * width, nodes.router.y * height - 35);
+        let totalBuffered = routerBuffer.telemetry.length + routerBuffer.alerts.length;
+        document.getElementById('stat-buffer').innerText = `${totalBuffered} шт.`;
+        
+        // Візуалізація критичного переповнення
+        if(totalBuffered >= MAX_BUFFER - 5) {
+            ctx.fillStyle = '#ef4444'; ctx.font = 'bold 12px sans-serif';
+            ctx.fillText("OVERFLOW: ВТРАТА ДАНИХ", nodes.router.x * width, nodes.router.y * height - 35);
         }
 
         frame++;
@@ -419,9 +463,9 @@
         let isNoise = Math.random() < 0.4;
 
         if (isAnomaly) {
-            let spikeProb = 0.05 + (anomalyStrength * 0.05); // Ймовірність залежить від повзунка
+            let spikeProb = 0.05 + (anomalyStrength * 0.05); 
             if (Math.random() < spikeProb) { 
-                let spikeAmp = 40 + (anomalyStrength * 20); // Амплітуда залежить від повзунка
+                let spikeAmp = 40 + (anomalyStrength * 20); 
                 signal += (Math.random() > 0.5 ? spikeAmp : -spikeAmp); 
                 isSpike = true;
                 
@@ -441,23 +485,24 @@
         sensorChart.update();
 
         if (isSpike) {
-            let burstSize = Math.ceil(anomalyStrength / 2); // Більше сили = більше пакетів
+            let burstSize = Math.ceil(anomalyStrength / 1.5); 
             for(let i=0; i<burstSize; i++){
                 packets.push(new Packet('alert', 1, nodes.sensor, nodes.edge));
             }
         } else if (isNoise) {
+            // Генеруємо 2 пакети шуму для більшого навантаження при Bypass режимі
+            packets.push(new Packet('noise', 1, nodes.sensor, nodes.edge));
             packets.push(new Packet('noise', 1, nodes.sensor, nodes.edge));
         } else if (Math.random() < 0.3) {
             packets.push(new Packet('telemetry', 1, nodes.sensor, nodes.edge));
         }
     }, 100);
 
-    // Sync Tick 
+    // Sync Tick (Тільки якщо МК увімкнений)
     setInterval(() => {
+        if (!edgeUp) return;
         packets.push(new Packet('sync', 1, nodes.edge, nodes.edge)); 
         packets[packets.length-1].handleEdgeLogic(); 
-        statFL++;
-        document.getElementById('stat-fl').innerText = statFL;
     }, 3000);
 
     // Chart Updates
@@ -485,16 +530,33 @@
         anomalyStrengthVal.innerText = anomalyStrength.toFixed(1);
     });
 
+    document.getElementById('edgeBtn').addEventListener('click', (e) => {
+        edgeUp = !edgeUp;
+        const statusEl = document.getElementById('ml-status');
+        
+        if (!edgeUp) {
+            e.target.innerText = 'Увімкнути МК';
+            e.target.classList.add('active-red');
+            statusEl.className = 'status-badge bg-red';
+            statusEl.innerText = 'BYPASS (ВИМКНЕНО)';
+        } else {
+            e.target.innerText = 'Вимкнути МК';
+            e.target.classList.remove('active-red');
+            statusEl.className = 'status-badge bg-green';
+            statusEl.innerText = 'АКТИВНИЙ';
+        }
+    });
+
     document.getElementById('anomalyBtn').addEventListener('click', (e) => {
         isAnomaly = !isAnomaly;
         anomalyStrengthSlider.disabled = !isAnomaly;
         
         if (isAnomaly) {
-            e.target.innerText = '🛑 Скинути тривогу';
-            e.target.classList.add('active-red');
+            e.target.innerText = '🛑 Скинути';
+            e.target.classList.add('active-orange');
         } else {
-            e.target.innerText = 'Симуляція інциденту (Тривога)';
-            e.target.classList.remove('active-red');
+            e.target.innerText = 'Тривога';
+            e.target.classList.remove('active-orange');
         }
     });
 
