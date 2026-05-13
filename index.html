@@ -72,6 +72,12 @@
         button.active-red { background-color: var(--accent-red); color: white; }
         button.active-ai { background-color: var(--accent-ai); color: white; }
 
+        input[type=range] {
+            flex-grow: 1;
+            margin: 0 10px;
+            accent-color: var(--accent-orange);
+        }
+
         .status-badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-size: 0.75em; font-weight: bold; }
         .bg-green { background: rgba(16, 185, 129, 0.2); color: var(--accent-green); }
         .bg-red { background: rgba(239, 68, 68, 0.2); color: var(--accent-red); }
@@ -115,12 +121,13 @@
             <div class="panel-title ai">IoT Контролер (Локально)</div>
             <button id="anomalyBtn">Симуляція інциденту (Тривога)</button>
             <div class="flex-between">
-                <span>Фільтр шумів:</span>
-                <span class="status-badge bg-green" id="ml-status">АКТИВНИЙ</span>
+                <span>Сила інциденту:</span>
+                <input type="range" id="anomalyStrength" min="1" max="5" step="0.5" value="2.5" disabled>
+                <span id="anomalyStrengthVal" style="font-weight:bold; color:var(--text-main); min-width: 20px; text-align:right;">2.5</span>
             </div>
             <div class="flex-between">
-                <span>Синхронізація БД:</span>
-                <span style="color: var(--accent-ai); font-size: 0.8em;">Кожні 3 сек</span>
+                <span>Фільтр шумів:</span>
+                <span class="status-badge bg-green" id="ml-status">АКТИВНИЙ</span>
             </div>
         </div>
 
@@ -170,6 +177,7 @@
 
     // --- System State ---
     let isAnomaly = false;
+    let anomalyStrength = 2.5; // Сила аномалії
     let fiberUp = true;
     let timeT = 0;
     
@@ -206,7 +214,6 @@
             this.startX = this.x; this.startY = this.y;
             this.targetX = endNode.x * width; this.targetY = endNode.y * height;
             this.progress = 0;
-            // Швидкість мобільної мережі трохи менша за провідну
             this.speed = stage === 3 && !fiberUp ? 0.008 : 0.015; 
             this.state = 'moving';
             this.routeType = stage === 3 && !fiberUp ? 'mobile' : 'fiber';
@@ -223,7 +230,6 @@
 
             this.x = this.startX + (this.targetX - this.startX) * this.progress;
             
-            // Якщо йде через 4G/5G, малюємо лінію з невеликою дугою вгору (до вишки)
             if (this.routeType === 'mobile') {
                 const arcHeight = height * 0.25;
                 const par = 4 * arcHeight * this.progress * (1 - this.progress);
@@ -345,7 +351,7 @@
     const sensorChart = new Chart(document.getElementById('sensorChart'), {
         type: 'line',
         data: { labels: Array(50).fill(''), datasets: [{ borderColor: '#3b82f6', borderWidth: 1.5, data: Array(50).fill(0), pointRadius: 0, tension: 0.1 }] },
-        options: { ...chartOpts, scales: { ...chartOpts.scales, y: { min: -100, max: 100, grid: { color: '#2b2b36' } } } }
+        options: { ...chartOpts, scales: { ...chartOpts.scales, y: { min: -150, max: 150, grid: { color: '#2b2b36' } } } }
     });
 
     const bufferChart = new Chart(document.getElementById('bufferChart'), {
@@ -375,16 +381,14 @@
 
         packets = packets.filter(p => { p.draw(ctx); return !p.update(); });
         
-        // QoS Logic: На оптоволокні пропускаємо все. На мобільній - обмежуємо.
+        // QoS Logic
         let txCapacity = fiberUp ? 3 : (frame % 2 === 0 ? 1 : 0); 
         
         for (let i = 0; i < txCapacity; i++) {
             let nextPacket = null;
-            // Пріоритети SD-WAN
             if (routerBuffer.sync.length > 0) nextPacket = routerBuffer.sync.shift();
             else if (routerBuffer.alerts.length > 0) nextPacket = routerBuffer.alerts.shift();
             else if (routerBuffer.telemetry.length > 0) {
-                // Відсікання зайвої телеметрії для економії 4G трафіку
                 if (!fiberUp && routerBuffer.telemetry.length > 5) {
                     routerBuffer.telemetry.shift(); 
                     continue; 
@@ -414,11 +418,19 @@
         let isSpike = false;
         let isNoise = Math.random() < 0.4;
 
-        if (isAnomaly && Math.random() < 0.15) { 
-            signal += (Math.random() > 0.5 ? 60 : -60); 
-            isSpike = true;
-            ctx.fillStyle = 'rgba(245, 158, 11, 0.3)';
-            ctx.beginPath(); ctx.arc(nodes.sensor.x * width, nodes.sensor.y * height, 30, 0, Math.PI*2); ctx.fill();
+        if (isAnomaly) {
+            let spikeProb = 0.05 + (anomalyStrength * 0.05); // Ймовірність залежить від повзунка
+            if (Math.random() < spikeProb) { 
+                let spikeAmp = 40 + (anomalyStrength * 20); // Амплітуда залежить від повзунка
+                signal += (Math.random() > 0.5 ? spikeAmp : -spikeAmp); 
+                isSpike = true;
+                
+                ctx.fillStyle = `rgba(245, 158, 11, ${0.1 + (anomalyStrength * 0.05)})`;
+                ctx.beginPath(); ctx.arc(nodes.sensor.x * width, nodes.sensor.y * height, 20 + (anomalyStrength * 4), 0, Math.PI*2); ctx.fill();
+            } else {
+                isNoise = Math.random() < (0.3 + anomalyStrength*0.1); 
+                if (isNoise) signal += (Math.random() - 0.5) * 15 * anomalyStrength;
+            }
         } else if (isNoise) {
             signal += (Math.random() - 0.5) * 15;
         }
@@ -429,8 +441,10 @@
         sensorChart.update();
 
         if (isSpike) {
-            packets.push(new Packet('alert', 1, nodes.sensor, nodes.edge));
-            packets.push(new Packet('alert', 1, nodes.sensor, nodes.edge));
+            let burstSize = Math.ceil(anomalyStrength / 2); // Більше сили = більше пакетів
+            for(let i=0; i<burstSize; i++){
+                packets.push(new Packet('alert', 1, nodes.sensor, nodes.edge));
+            }
         } else if (isNoise) {
             packets.push(new Packet('noise', 1, nodes.sensor, nodes.edge));
         } else if (Math.random() < 0.3) {
@@ -463,8 +477,18 @@
     }, 500);
 
     // --- Controls ---
+    const anomalyStrengthSlider = document.getElementById('anomalyStrength');
+    const anomalyStrengthVal = document.getElementById('anomalyStrengthVal');
+
+    anomalyStrengthSlider.addEventListener('input', (e) => {
+        anomalyStrength = parseFloat(e.target.value);
+        anomalyStrengthVal.innerText = anomalyStrength.toFixed(1);
+    });
+
     document.getElementById('anomalyBtn').addEventListener('click', (e) => {
         isAnomaly = !isAnomaly;
+        anomalyStrengthSlider.disabled = !isAnomaly;
+        
         if (isAnomaly) {
             e.target.innerText = '🛑 Скинути тривогу';
             e.target.classList.add('active-red');
